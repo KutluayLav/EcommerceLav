@@ -8,6 +8,21 @@ export type Product = {
   tag?: 'featured' | 'new' | 'popular';
 };
 
+export interface Review {
+  id: string;
+  productId: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  rating: number; // 1-5 stars
+  title: string;
+  comment: string;
+  date: string;
+  verified: boolean; // if user actually purchased the product
+  helpful: number; // number of people who found this review helpful
+  userMarkedHelpful?: boolean; // if current user marked this helpful
+}
+
 export interface Order {
   id: string;
   date: string; 

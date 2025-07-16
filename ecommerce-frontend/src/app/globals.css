@@ -1,8 +1,54 @@
 @import "tailwindcss";
 
-@theme {
-  --color-primary: #e30a17;     
-  --color-bgwhite: #ffffff;     
-  --color-blackheading: #000000; 
-  --color-darkgray: #141414;     
+@layer theme {
+  :root {
+    --color-primary: #e30a17;     
+    --color-bgwhite: #ffffff;     
+    --color-blackheading: #000000; 
+    --color-darkgray: #141414;     
+  }
+}
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+    color: var(--color-darkgray);
+  }
+}
+
+@layer utilities {
+  .text-primary {
+    color: var(--color-primary);
+  }
+  
+  .bg-primary {
+    background-color: var(--color-primary);
+  }
+  
+  .text-bgwhite {
+    color: var(--color-bgwhite);
+  }
+  
+  .bg-bgwhite {
+    background-color: var(--color-bgwhite);
+  }
+  
+  .text-blackheading {
+    color: var(--color-blackheading);
+  }
+  
+  .text-darkgray {
+    color: var(--color-darkgray);
+  }
 }
