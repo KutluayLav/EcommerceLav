@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ShoppingCart, Menu, X, UserCircle, LogOut, User, Settings } from 'lucide-react';
+import { ShoppingCart, Menu, X, UserCircle, LogOut, User, Settings, Search, Heart } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store';
 import { logout } from '@/features/auth/authSlice';
@@ -10,6 +10,7 @@ import { logout } from '@/features/auth/authSlice';
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const cartCount = useSelector((state: RootState) => state.cart.items.length);
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
@@ -17,6 +18,15 @@ export default function Navbar() {
   const menuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -36,204 +46,266 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-bgwhite text-darkgray shadow sticky top-0 z-50 border-b">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/" className="font-extrabold text-2xl text-blackheading hover:text-primary transition">
-          LavShop
-        </Link>
-
-        {/* Desktop Menü */}
-        <div className="hidden md:flex flex-1 mx-8 items-center space-x-6">
-          <input
-            type="search"
-            placeholder="Search products..."
-            className="flex-grow border border-darkgray rounded-md px-4 py-2 placeholder-darkgray focus:outline-none focus:ring-2 focus:ring-primary transition"
-          />
-
-          <Link href="/" className="hover:text-primary transition font-medium">
-            Home
-          </Link>
-          <Link href="/products" className="hover:text-primary transition font-medium">
-            Products
-          </Link>
-          <Link href="/categories" className="hover:text-primary transition font-medium">
-            Categories
-          </Link>
-          <Link href="/contact" className="hover:text-primary transition font-medium">
-            Contact
-          </Link>
-        </div>
-
-        {/* Sağ ikonlar */}
-        <div className="flex items-center space-x-6">
-          <Link href="/cart" className="relative hover:text-primary transition">
-            <ShoppingCart size={24} className="text-darkgray" />
-            {cartCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-primary text-bgwhite rounded-full px-1 text-xs font-bold min-w-[18px] h-5 flex items-center justify-center">
-                {cartCount}
-              </span>
-            )}
-          </Link>
-
-          {/* Kullanıcı Menüsü */}
-          {isAuthenticated && user ? (
-            <div className="relative" ref={userMenuRef}>
-              <button
-                onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center space-x-2 hover:text-primary transition focus:outline-none"
-              >
-                <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-bold text-blue-600">
-                    {user.name.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <span className="hidden md:block text-sm font-medium">{user.name}</span>
-              </button>
-
-              {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border">
-                  <Link 
-                    href="/dashboard" 
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    onClick={() => setUserMenuOpen(false)}
-                  >
-                    <User className="mr-3 h-4 w-4" />
-                    Dashboard
-                  </Link>
-                  <hr className="my-1" />
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    <LogOut className="mr-3 h-4 w-4" />
-                    Sign Out
-                  </button>
-                </div>
-              )}
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      scrolled 
+        ? 'bg-white/95 backdrop-blur-md shadow-lg border-b border-gray-200' 
+        : 'bg-white shadow-sm'
+    }`}>
+      <div className="max-w-7xl mx-auto px-4 lg:px-6">
+        <div className="flex items-center justify-between h-16 lg:h-20">
+          {/* Logo */}
+          <Link href="/" className="flex items-center space-x-2 group">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+              <span className="text-white font-bold text-lg">L</span>
             </div>
-          ) : (
-            <div className="hidden md:flex items-center space-x-4">
-              <Link 
-                href="/auth/login" 
-                className="text-sm font-medium hover:text-primary transition"
-              >
-                Sign In
-              </Link>
-              <Link 
-                href="/auth/signup" 
-                className="bg-primary text-bgwhite px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition"
-              >
-                Sign Up
-              </Link>
-            </div>
-          )}
+            <span className="font-extrabold text-xl lg:text-2xl text-blackheading group-hover:text-primary transition-colors">
+              LavShop
+            </span>
+          </Link>
 
-          {/* Hamburger Menü - Mobil */}
-          <button
-            className="md:hidden hover:text-primary focus:outline-none transition"
-            onClick={() => setMobileMenuOpen((v) => !v)}
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? <X size={28} className="text-darkgray" /> : <Menu size={28} className="text-darkgray" />}
-          </button>
-        </div>
-      </div>
+          {/* Desktop Navigation */}
+          <div className="hidden lg:flex items-center space-x-8 ml-12">
+            <Link 
+              href="/products" 
+              className="text-gray-700 hover:text-primary font-medium transition-colors relative group"
+            >
+              Products
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full"></span>
+            </Link>
+            <Link 
+              href="/categories" 
+              className="text-gray-700 hover:text-primary font-medium transition-colors relative group"
+            >
+              Categories
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full"></span>
+            </Link>
+            <Link 
+              href="/contact" 
+              className="text-gray-700 hover:text-primary font-medium transition-colors relative group"
+            >
+              Contact
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full"></span>
+            </Link>
+          </div>
 
-      {/* Mobil Menü */}
-      {mobileMenuOpen && (
-        <div ref={menuRef} className="md:hidden bg-bgwhite shadow-xl border-t border-gray-200">
-          <div className="px-4 py-4 space-y-4">
-            {/* Arama Kutusu */}
-            <div className="relative">
+          {/* Search Bar - Desktop */}
+          <div className="hidden lg:flex flex-1 max-w-md mx-8">
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
                 type="search"
                 placeholder="Ürün ara..."
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition text-sm"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all bg-gray-50 focus:bg-white"
+              />
+            </div>
+          </div>
+
+          {/* Right Icons */}
+          <div className="flex items-center space-x-4 lg:space-x-6">
+            {/* Cart - Always show */}
+            <Link href="/cart" className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors group">
+              <ShoppingCart className="h-5 w-5 ml-3 text-gray-600 group-hover:text-primary transition-colors" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-primary text-white rounded-full px-1.5 py-0.5 text-xs font-bold min-w-[20px] h-5 flex items-center justify-center animate-pulse">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+
+            {/* Wishlist - Always show */}
+            <Link href="/wishlist" className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors group">
+              <Heart className="h-5 w-5 text-gray-600 group-hover:text-red-500 transition-colors" />
+            </Link>
+
+            {/* User Menu */}
+            {isAuthenticated && user ? (
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none"
+                >
+                  <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-md">
+                    <span className="text-sm font-bold text-white">
+                      {user.name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <span className="hidden lg:block text-sm font-medium text-gray-700">{user.name}</span>
+                </button>
+
+                {userMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl py-2 z-50 border border-gray-200">
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <p className="text-sm font-semibold text-gray-900">{user.name}</p>
+                      <p className="text-xs text-gray-500">{user.email}</p>
+                    </div>
+                    <Link 
+                      href="/dashboard" 
+                      className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      <User className="mr-3 h-4 w-4" />
+                      Dashboard
+                    </Link>
+                    <Link 
+                      href="/profile" 
+                      className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      <Settings className="mr-3 h-4 w-4" />
+                      Settings
+                    </Link>
+                    <hr className="my-1" />
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <LogOut className="mr-3 h-4 w-4" />
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="hidden lg:flex items-center space-x-3">
+                <Link 
+                  href="/auth/login" 
+                  className="text-sm font-medium text-gray-700 hover:text-primary transition-colors"
+                >
+                  Sign In
+                </Link>
+                <Link 
+                  href="/auth/signup" 
+                  className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shadow-md hover:shadow-lg"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
+
+            {/* Mobile Menu Button - Always visible on mobile */}
+            <button
+              className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? (
+                <X className="h-6 w-6 text-gray-600" />
+              ) : (
+                <Menu className="h-6 w-6 text-gray-600" />
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div ref={menuRef} className="lg:hidden bg-white border-t border-gray-200 shadow-xl max-h-[80vh] overflow-y-auto">
+          <div className="px-4 py-4 space-y-3">
+
+            {/* Mobile Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="search"
+                placeholder="Ürün ara..."
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all bg-gray-50 focus:bg-white text-sm"
               />
             </div>
 
-            {/* Navigasyon Linkleri */}
-            <nav className="flex flex-col space-y-1">
+            {/* Mobile Navigation */}
+            <nav className="space-y-1">
               <Link 
                 href="/" 
-                className="px-3 py-3 rounded-lg hover:bg-gray-50 hover:text-primary font-medium transition-colors"
+                className="flex items-center px-3 py-2.5 rounded-lg hover:bg-gray-50 hover:text-primary font-medium transition-colors text-sm"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Ana Sayfa
+                Home
               </Link>
               <Link 
                 href="/products" 
-                className="px-3 py-3 rounded-lg hover:bg-gray-50 hover:text-primary font-medium transition-colors"
+                className="flex items-center px-3 py-2.5 rounded-lg hover:bg-gray-50 hover:text-primary font-medium transition-colors text-sm"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Ürünler
+                Products
               </Link>
               <Link 
                 href="/categories" 
-                className="px-3 py-3 rounded-lg hover:bg-gray-50 hover:text-primary font-medium transition-colors"
+                className="flex items-center px-3 py-2.5 rounded-lg hover:bg-gray-50 hover:text-primary font-medium transition-colors text-sm"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Kategoriler
+                Categories
               </Link>
               <Link 
                 href="/contact" 
-                className="px-3 py-3 rounded-lg hover:bg-gray-50 hover:text-primary font-medium transition-colors"
+                className="flex items-center px-3 py-2.5 rounded-lg hover:bg-gray-50 hover:text-primary font-medium transition-colors text-sm"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                İletişim
+                Contact
               </Link>
+              
             </nav>
             
-            {/* Mobil Auth Menüsü */}
-            <div className="border-t border-gray-200 pt-4 mt-4">
+            {/* Mobile Auth */}
+            <div className="border-t border-gray-200 pt-3">
               {isAuthenticated && user ? (
                 <div className="space-y-2">
-                  {/* Kullanıcı Profil Kartı */}
-                  <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
-                    <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-base font-bold text-blue-600">
+                  {/* Compact User Info */}
+                  <div className="flex items-center space-x-2 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
+                    <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-sm">
+                      <span className="text-sm font-bold text-white">
                         {user.name.charAt(0).toUpperCase()}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
+                      <p className="font-semibold text-gray-900 text-sm truncate">{user.name}</p>
                       <p className="text-xs text-gray-500 truncate">{user.email}</p>
                     </div>
                   </div>
                   
-                  {/* Kullanıcı Menü Öğeleri */}
-                  <Link 
-                    href="/dashboard" 
-                    className="flex items-center px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <User className="h-5 w-5 mr-3 text-gray-500" />
-                    <span className="font-medium">Dashboard</span>
-                  </Link>
+                  {/* Compact Menu Items */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <Link 
+                      href="/dashboard" 
+                      className="flex items-center px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <User className="h-4 w-4 mr-2 text-gray-500" />
+                      <span className="font-medium">Dashboard</span>
+                    </Link>
+                    <Link 
+                      href="/profile" 
+                      className="flex items-center px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Settings className="h-4 w-4 mr-2 text-gray-500" />
+                      <span className="font-medium">Settings</span>
+                    </Link>
+                  </div>
+                  
                   <button
                     onClick={() => {
                       handleLogout();
                       setMobileMenuOpen(false);
                     }}
-                    className="flex items-center w-full px-3 py-3 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
+                    className="flex items-center w-full px-3 py-2 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors text-sm"
                   >
-                    <LogOut className="h-5 w-5 mr-3" />
+                    <LogOut className="h-4 w-4 mr-2" />
                     <span className="font-medium">Sign Out</span>
                   </button>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <Link 
                     href="/auth/login" 
-                    className="block w-full px-4 py-3 text-center border border-primary text-primary rounded-lg hover:bg-primary hover:text-white font-semibold transition-colors"
+                    className="block w-full px-3 py-2.5 text-center border-2 border-primary text-primary rounded-lg   font-semibold transition-colors text-sm"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Sign In
                   </Link>
                   <Link 
                     href="/auth/signup" 
-                    className="block w-full px-4 py-3 text-center bg-primary text-white rounded-lg hover:bg-red-700 font-semibold transition-colors shadow-sm"
+                    className="block w-full px-3 py-2.5 text-center bg-primary text-white rounded-lg hover:bg-primary/90 font-semibold transition-colors shadow-md text-sm"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Sign Up

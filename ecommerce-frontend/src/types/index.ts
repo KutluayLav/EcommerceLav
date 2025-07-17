@@ -4,8 +4,11 @@ export type Product = {
   price: number;
   image: string;
   rating?: number;
+  originalPrice?: number;
+  description?: string;
+  popularity?: number;
   category: 'electronics' | 'books' | 'fashion' | 'home';
-  tag?: 'featured' | 'new' | 'popular';
+  tag?: 'featured' | 'new' | 'popular' | 'all';
 };
 
 export interface Review {

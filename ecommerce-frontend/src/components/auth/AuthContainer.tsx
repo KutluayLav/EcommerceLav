@@ -31,7 +31,7 @@ export default function AuthContainer() {
   // Eğer kullanıcı giriş yapmışsa ve e-posta doğrulanmamışsa doğrulama sayfasını göster
   if (user && !user.isEmailVerified) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col justify-center px-4 py-8 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center px-4 py-8 sm:px-6 lg:px-8 mt-20">
         <EmailVerification
           email={user.email}
           onResendEmail={() => {
@@ -125,7 +125,7 @@ export default function AuthContainer() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center px-4 py-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center px-4 py-8 sm:px-6 lg:px-8 mt-20">
       {renderAuthComponent()}
     </div>
   );

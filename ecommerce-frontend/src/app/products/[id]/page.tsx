@@ -21,7 +21,7 @@ export default function ProductDetailPage() {
   const decreaseQty = () => setQuantity((q) => Math.max(q - 1, 1));
 
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12" style={{ color: 'var(--color-darkgray)' }}>
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 mt-20" style={{ color: 'var(--color-darkgray)' }}>
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
         {/* Image Gallery - For now only main image */}
         <div className="lg:w-1/2 rounded-lg overflow-hidden shadow-lg">

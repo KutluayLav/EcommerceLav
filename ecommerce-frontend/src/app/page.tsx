@@ -3,6 +3,7 @@
 import Hero from '@/components/Hero';
 import Categories from '@/components/Categories';
 import Promotions from '@/components/Promotions';
+import Features from '@/components/Features';
 import ProductCard from '@/components/ProductCard';
 import Newsletter from '@/components/Newsletter';
 import { allProducts } from '@/data/products';
@@ -18,6 +19,7 @@ export default function HomePage() {
       <Hero />
       <Categories />
       <Promotions />
+      <Features />
 
       <ProductSection title="Featured Products" products={featuredProducts} />
       <ProductSection title="New Arrivals" products={newArrivals} />

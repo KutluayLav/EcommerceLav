@@ -27,21 +27,21 @@ export default function WishlistPage() {
     );
   }
 
-  // Mock wishlist data - gerçek uygulamada user'dan gelecek
+
   const wishlistItems = mockUser.wishlist || [];
 
   const handleRemoveFromWishlist = (productId: string) => {
-    // Wishlist'ten kaldırma işlemi - gerçek uygulamada Redux action dispatch edilecek
+  
     console.log('Remove from wishlist:', productId);
   };
 
   const handleAddToCart = (productId: string) => {
-    // Sepete ekleme işlemi - gerçek uygulamada Redux action dispatch edilecek
+    
     console.log('Add to cart:', productId);
   };
 
   return (
-    <main className="bg-gray-50 min-h-screen">
+    <main className="bg-gray-50 min-h-screen mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* Header */}
         <div className="mb-6 sm:mb-8">

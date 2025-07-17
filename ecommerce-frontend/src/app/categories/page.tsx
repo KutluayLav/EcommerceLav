@@ -10,7 +10,7 @@ const categories = [
 
 export default function CategoriesPage() {
   return (
-    <main className="max-w-7xl mx-auto px-4 py-10">
+    <main className="max-w-7xl mx-auto px-4 py-10 mt-20">
       <h1 className="text-4xl font-extrabold mb-10 text-blackheading">Shop by Category</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {categories.map((cat) => (

@@ -1,11 +1,71 @@
 'use client';
-import React, { useState } from 'react';
-import { ArrowLeft, Upload, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Upload, X, Save } from 'lucide-react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 
-const ProductForm = () => {
+// Mock product data - gerçek uygulamada API'den gelecek
+const mockProducts = [
+  {
+    id: 'PRD001',
+    name: 'Wireless Headphones',
+    description: 'High-quality wireless headphones with noise cancellation',
+    category: 'Electronics',
+    price: 89.99,
+    discountPrice: 79.99,
+    stock: 120,
+    status: 'Active',
+    sku: 'WH-001',
+    images: []
+  },
+  {
+    id: 'PRD002',
+    name: 'Smart Watch',
+    description: 'Feature-rich smartwatch with health monitoring',
+    category: 'Electronics',
+    price: 199.99,
+    discountPrice: 179.99,
+    stock: 85,
+    status: 'Active',
+    sku: 'SW-002',
+    images: []
+  },
+  {
+    id: 'PRD003',
+    name: 'Bluetooth Speaker',
+    description: 'Portable bluetooth speaker with amazing sound quality',
+    category: 'Electronics',
+    price: 79.99,
+    discountPrice: 69.99,
+    stock: 95,
+    status: 'Inactive',
+    sku: 'BS-003',
+    images: []
+  }
+];
+
+const EditProductPage = () => {
+  const params = useParams();
+  const productId = params.id as string;
+  
+  const [product, setProduct] = useState<any>(null);
   const [images, setImages] = useState<string[]>([]);
   const [dragActive, setDragActive] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate API call
+    const fetchProduct = () => {
+      const foundProduct = mockProducts.find(p => p.id === productId);
+      if (foundProduct) {
+        setProduct(foundProduct);
+        setImages(foundProduct.images || []);
+      }
+      setLoading(false);
+    };
+
+    fetchProduct();
+  }, [productId]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -28,6 +88,34 @@ const ProductForm = () => {
     }
   };
 
+  const handleInputChange = (field: string, value: any) => {
+    setProduct((prev: any) => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSave = () => {
+    // Burada kaydetme işlemi yapılacak
+    console.log('Saving product:', product);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Product not found</div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -39,14 +127,15 @@ const ProductForm = () => {
           >
             <ArrowLeft className="h-6 w-6" />
           </Link>
-          <h1 className="text-xl md:text-2xl font-bold text-gray-800">Add New Product</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Edit Product</h1>
         </div>
         <div className="flex items-center space-x-3">
-          <button className="md:px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-            Save as Draft
-          </button>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            Publish Product
+          <button 
+            onClick={handleSave}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            Save Changes
           </button>
         </div>
       </div>
@@ -63,6 +152,8 @@ const ProductForm = () => {
                 </label>
                 <input
                   type="text"
+                  value={product.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter product name"
                 />
@@ -73,6 +164,8 @@ const ProductForm = () => {
                 </label>
                 <textarea
                   rows={4}
+                  value={product.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter product description"
                 />
@@ -130,21 +223,29 @@ const ProductForm = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Category
                 </label>
-                <select className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white">
+                <select 
+                  value={product.category}
+                  onChange={(e) => handleInputChange('category', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white"
+                >
                   <option value="">Select a category</option>
-                  <option value="electronics">Electronics</option>
-                  <option value="clothing">Clothing</option>
-                  <option value="books">Books</option>
+                  <option value="Electronics">Electronics</option>
+                  <option value="Clothing">Clothing</option>
+                  <option value="Books">Books</option>
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Status
                 </label>
-                <select className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white">
-                  <option value="active">Active</option>
-                  <option value="draft">Draft</option>
-                  <option value="inactive">Inactive</option>
+                <select 
+                  value={product.status}
+                  onChange={(e) => handleInputChange('status', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white"
+                >
+                  <option value="Active">Active</option>
+                  <option value="Draft">Draft</option>
+                  <option value="Inactive">Inactive</option>
                 </select>
               </div>
             </div>
@@ -163,6 +264,8 @@ const ProductForm = () => {
                   </span>
                   <input
                     type="number"
+                    value={product.price}
+                    onChange={(e) => handleInputChange('price', parseFloat(e.target.value))}
                     className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="0.00"
                   />
@@ -178,6 +281,8 @@ const ProductForm = () => {
                   </span>
                   <input
                     type="number"
+                    value={product.discountPrice}
+                    onChange={(e) => handleInputChange('discountPrice', parseFloat(e.target.value))}
                     className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="0.00"
                   />
@@ -195,6 +300,8 @@ const ProductForm = () => {
                 </label>
                 <input
                   type="text"
+                  value={product.sku}
+                  onChange={(e) => handleInputChange('sku', e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter SKU"
                 />
@@ -205,6 +312,8 @@ const ProductForm = () => {
                 </label>
                 <input
                   type="number"
+                  value={product.stock}
+                  onChange={(e) => handleInputChange('stock', parseInt(e.target.value))}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter quantity"
                 />
@@ -217,4 +326,4 @@ const ProductForm = () => {
   );
 };
 
-export default ProductForm; 
+export default EditProductPage; 
