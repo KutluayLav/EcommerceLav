@@ -5,12 +5,14 @@ import Link from 'next/link';
 import { ShoppingCart, Menu, X, UserCircle, LogOut, User, Settings, Search, Heart } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store';
-import { logout } from '@/features/auth/authSlice';
+import { logout, loginSuccess } from '@/features/auth/authSlice';
+import { getProfile } from '@/services/authService';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const cartCount = useSelector((state: RootState) => state.cart.items.length);
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
@@ -40,8 +42,48 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Component mount olduğunda set et
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Sayfa yüklendiğinde auth state'ini kontrol et
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        if (typeof window !== 'undefined') {
+          const token = localStorage.getItem('token');
+          if (token && !isAuthenticated) {
+            const response = await getProfile();
+            if (response.data && response.data.firstName) {
+              dispatch(loginSuccess({
+                id: response.data._id,
+                name: response.data.firstName + ' ' + response.data.lastName,
+                email: response.data.email,
+                isEmailVerified: response.data.emailVerified || false,
+                avatar: response.data.avatar || undefined
+              }));
+            }
+          }
+        }
+      } catch (error) {
+        // Token geçersizse localStorage'dan temizle
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('token');
+        }
+      }
+    };
+
+    checkAuth();
+  }, [dispatch, isAuthenticated]);
+
   const handleLogout = () => {
     dispatch(logout());
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      // Login sayfasına yönlendir
+      window.location.href = '/auth/login';
+    }
     setUserMenuOpen(false);
   };
 
@@ -105,7 +147,7 @@ export default function Navbar() {
             {/* Cart - Always show */}
             <Link href="/cart" className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors group">
               <ShoppingCart className="h-5 w-5 ml-3 text-gray-600 group-hover:text-primary transition-colors" />
-              {cartCount > 0 && (
+              {mounted && cartCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-primary text-white rounded-full px-1.5 py-0.5 text-xs font-bold min-w-[20px] h-5 flex items-center justify-center animate-pulse">
                   {cartCount}
                 </span>
@@ -118,68 +160,72 @@ export default function Navbar() {
             </Link>
 
             {/* User Menu */}
-            {isAuthenticated && user ? (
-              <div className="relative" ref={userMenuRef}>
-                <button
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none"
-                >
-                  <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-md">
-                    <span className="text-sm font-bold text-white">
-                      {user.name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <span className="hidden lg:block text-sm font-medium text-gray-700">{user.name}</span>
-                </button>
-
-                {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl py-2 z-50 border border-gray-200">
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="text-sm font-semibold text-gray-900">{user.name}</p>
-                      <p className="text-xs text-gray-500">{user.email}</p>
-                    </div>
-                    <Link 
-                      href="/dashboard" 
-                      className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <User className="mr-3 h-4 w-4" />
-                      Dashboard
-                    </Link>
-                    <Link 
-                      href="/profile" 
-                      className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <Settings className="mr-3 h-4 w-4" />
-                      Settings
-                    </Link>
-                    <hr className="my-1" />
+            {mounted && (
+              <>
+                {isAuthenticated && user && user.name ? (
+                  <div className="relative" ref={userMenuRef}>
                     <button
-                      onClick={handleLogout}
-                      className="flex items-center w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      onClick={() => setUserMenuOpen(!userMenuOpen)}
+                      className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none"
                     >
-                      <LogOut className="mr-3 h-4 w-4" />
-                      Sign Out
+                      <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-md">
+                        <span className="text-sm font-bold text-white">
+                          {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                        </span>
+                      </div>
+                      <span className="hidden lg:block text-sm font-medium text-gray-700">{user.name || 'Kullanıcı'}</span>
                     </button>
+
+                    {userMenuOpen && (
+                      <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl py-2 z-50 border border-gray-200">
+                        <div className="px-4 py-3 border-b border-gray-100">
+                          <p className="text-sm font-semibold text-gray-900">{user.name || 'Kullanıcı'}</p>
+                          <p className="text-xs text-gray-500">{user.email || 'email@example.com'}</p>
+                        </div>
+                        <Link 
+                          href="/dashboard" 
+                          className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <User className="mr-3 h-4 w-4" />
+                          Dashboard
+                        </Link>
+                        <Link 
+                          href="/profile" 
+                          className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <Settings className="mr-3 h-4 w-4" />
+                          Settings
+                        </Link>
+                        <hr className="my-1" />
+                        <button
+                          onClick={handleLogout}
+                          className="flex items-center w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <LogOut className="mr-3 h-4 w-4" />
+                          Sign Out
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="hidden lg:flex items-center space-x-3">
+                    <Link 
+                      href="/auth/login" 
+                      className="text-sm font-medium text-gray-700 hover:text-primary transition-colors"
+                    >
+                      Sign In
+                    </Link>
+                    <Link 
+                      href="/auth/signup" 
+                      className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shadow-md hover:shadow-lg"
+                    >
+                      Sign Up
+                    </Link>
                   </div>
                 )}
-              </div>
-            ) : (
-              <div className="hidden lg:flex items-center space-x-3">
-                <Link 
-                  href="/auth/login" 
-                  className="text-sm font-medium text-gray-700 hover:text-primary transition-colors"
-                >
-                  Sign In
-                </Link>
-                <Link 
-                  href="/auth/signup" 
-                  className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shadow-md hover:shadow-lg"
-                >
-                  Sign Up
-                </Link>
-              </div>
+              </>
             )}
 
             {/* Mobile Menu Button - Always visible on mobile */}
@@ -248,7 +294,7 @@ export default function Navbar() {
             
             {/* Mobile Auth */}
             <div className="border-t border-gray-200 pt-3">
-              {isAuthenticated && user ? (
+              {mounted && isAuthenticated && user ? (
                 <div className="space-y-2">
                   {/* Compact User Info */}
                   <div className="flex items-center space-x-2 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
@@ -294,7 +340,7 @@ export default function Navbar() {
                     <span className="font-medium">Sign Out</span>
                   </button>
                 </div>
-              ) : (
+              ) : mounted ? (
                 <div className="space-y-2">
                   <Link 
                     href="/auth/login" 
@@ -311,7 +357,7 @@ export default function Navbar() {
                     Sign Up
                   </Link>
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
         </div>

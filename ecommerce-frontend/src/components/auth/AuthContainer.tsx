@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import LoginForm from './LoginForm';
 import SignupForm from './SignupForm';
 import EmailVerification from './EmailVerification';
@@ -12,8 +12,10 @@ type AuthMode = 'login' | 'signup' | 'verify-email' | 'forgot-password';
 
 export default function AuthContainer() {
   const pathname = usePathname();
+  const router = useRouter();
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [pendingEmail, setPendingEmail] = useState('');
+  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
 
   // URL'ye göre başlangıç modunu ayarla
   useEffect(() => {
@@ -26,7 +28,17 @@ export default function AuthContainer() {
     }
   }, [pathname]);
   
-  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  // Dashboard yönlendirmesi için useEffect - her zaman çağrılır
+  useEffect(() => {
+    if (isAuthenticated && user?.isEmailVerified) {
+      // 2 saniye sonra dashboard'a yönlendir
+      const timer = setTimeout(() => {
+        router.push('/dashboard');
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated, user?.isEmailVerified, router]);
 
   // Eğer kullanıcı giriş yapmışsa ve e-posta doğrulanmamışsa doğrulama sayfasını göster
   if (user && !user.isEmailVerified) {
@@ -48,7 +60,6 @@ export default function AuthContainer() {
 
   // Eğer kullanıcı tamamen giriş yapmışsa dashboard'a yönlendir
   if (isAuthenticated && user?.isEmailVerified) {
-    // Router ile dashboard'a yönlendirme yapılacak
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col justify-center px-4 py-8 sm:px-6 lg:px-8">
         <div className="w-full max-w-md mx-auto bg-white rounded-lg shadow-lg p-6 sm:p-8 text-center">

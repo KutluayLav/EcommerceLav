@@ -6,6 +6,7 @@ import { Eye, EyeOff, Mail, Lock, User, Check } from 'lucide-react';
 import { signupStart, signupSuccess, signupFailure } from '@/features/auth/authSlice';
 import { RootState } from '@/store';
 import { User as UserType } from '@/features/auth/authSlice';
+import { register as registerApi } from '@/services/authService';
 
 interface SignupFormProps {
   onSwitchToLogin: () => void;
@@ -71,17 +72,31 @@ export default function SignupForm({ onSwitchToLogin }: SignupFormProps) {
 
     try {
       // Simulated API call - gerçek uygulamada API çağrısı yapılacak
-      setTimeout(() => {
-        const newUser: UserType = {
-          id: Math.random().toString(36).substr(2, 9),
-          name: formData.name,
-          email: formData.email,
-          isEmailVerified: false // Kayıt sonrası e-posta doğrulaması gerekecek
-        };
-        dispatch(signupSuccess(newUser));
-      }, 1000);
-    } catch (error) {
-      dispatch(signupFailure('Kayıt başarısız. Lütfen tekrar deneyin.'));
+      // setTimeout(() => {
+      //   const newUser: UserType = {
+      //     id: Math.random().toString(36).substr(2, 9),
+      //     name: formData.name,
+      //     email: formData.email,
+      //     isEmailVerified: false // Kayıt sonrası e-posta doğrulaması gerekecek
+      //   };
+      //   dispatch(signupSuccess(newUser));
+      // }, 1000);
+      const res = await registerApi({
+        firstName: formData.name.split(' ')[0] || formData.name,
+        lastName: formData.name.split(' ').slice(1).join(' '),
+        email: formData.email,
+        password: formData.password
+      });
+      const userData = res.data;
+      dispatch(signupSuccess({
+        id: userData._id,
+        name: userData.firstName + ' ' + userData.lastName,
+        email: userData.email,
+        isEmailVerified: userData.emailVerified,
+        avatar: userData.avatar || undefined
+      }));
+    } catch (error: any) {
+      dispatch(signupFailure(error.response?.data?.message || 'Kayıt başarısız. Lütfen tekrar deneyin.'));
     }
   };
 

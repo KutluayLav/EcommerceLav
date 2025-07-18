@@ -2,75 +2,130 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { allProducts } from '@/data/products';
 import { Product } from '@/types';
 import { Search, Filter, Heart, Star, ChevronLeft, ChevronRight, Grid, List } from 'lucide-react';
+import { getProducts } from '@/services/productService';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
+import { addToWishlist, removeFromWishlist } from '@/services/userService';
 
 const tabs = [
-  { label: 'All', value: 'all' },
-  { label: 'Featured', value: 'featured' },
-  { label: 'New Arrivals', value: 'new' },
-  { label: 'Popular', value: 'popular' },
+  { label: 'Tümü', value: 'all' },
+  { label: 'Öne Çıkanlar', value: 'featured' },
+  { label: 'Yeni Gelenler', value: 'new' },
+  { label: 'Popüler', value: 'popular' },
 ];
 
 const sortOptions = [
-  { label: 'Latest', value: 'latest' },
-  { label: 'Price: Low to High', value: 'price-asc' },
-  { label: 'Price: High to Low', value: 'price-desc' },
-  { label: 'Rating', value: 'rating' },
-  { label: 'Popularity', value: 'popularity' },
+  { label: 'En Yeni', value: 'latest' },
+  { label: 'Fiyat: Düşükten Yükseğe', value: 'price-asc' },
+  { label: 'Fiyat: Yüksekten Düşüğe', value: 'price-desc' },
+  { label: 'Değerlendirme', value: 'rating' },
+  { label: 'Popülerlik', value: 'popularity' },
 ];
 
 export default function ProductsPage() {
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('latest');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [totalProducts, setTotalProducts] = useState(0);
   const [wishlist, setWishlist] = useState<string[]>([]);
 
-  // Filter products based on category and search
-  const filtered: Product[] = allProducts.filter((product) => {
-    const matchesCategory = selectedCategory === 'all' || product.tag === selectedCategory;
-    const matchesSearch = product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  // Fetch products from backend
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        let response;
 
-  // Sort products
-  const sorted = [...filtered].sort((a, b) => {
-    switch (sortBy) {
-      case 'price-asc':
-        return a.price - b.price;
-      case 'price-desc':
-        return b.price - a.price;
-      case 'rating':
-        return (b.rating || 0) - (a.rating || 0);
-      case 'popularity':
-        return (b.popularity || 0) - (a.popularity || 0);
-      default:
-        return 0;
-    }
-  });
+        const params: any = {
+          page: currentPage,
+          limit: itemsPerPage,
+        };
+
+        if (searchTerm) {
+          params.search = searchTerm;
+        }
+
+        if (sortBy !== 'latest') {
+          params.sortBy = sortBy;
+          params.sortOrder = sortBy === 'price-asc' ? 'asc' : 'desc';
+        }
+
+        // Tab'a göre farklı API çağrıları
+        switch (selectedCategory) {
+          case 'featured':
+            params.featured = true;
+            response = await getProducts(params);
+            setProducts(response.data.products || []);
+            setTotalProducts(response.data.total || 0);
+            break;
+          case 'new':
+            params.newArrival = true;
+            response = await getProducts(params);
+            setProducts(response.data.products || []);
+            setTotalProducts(response.data.total || 0);
+            break;
+          case 'popular':
+            params.popular = true;
+            response = await getProducts(params);
+            setProducts(response.data.products || []);
+            setTotalProducts(response.data.total || 0);
+            break;
+          default:
+            // 'all' veya kategori seçimi
+            if (selectedCategory !== 'all') {
+              params.category = selectedCategory;
+            }
+            response = await getProducts(params);
+            setProducts(response.data.products || []);
+            setTotalProducts(response.data.total || 0);
+            break;
+        }
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'Ürünler yüklenemedi.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [currentPage, itemsPerPage, searchTerm, selectedCategory, sortBy]);
 
   // Calculate pagination
-  const totalPages = Math.ceil(sorted.length / itemsPerPage);
+  const totalPages = Math.ceil(totalProducts / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentProducts = sorted.slice(startIndex, endIndex);
+  const endIndex = Math.min(startIndex + itemsPerPage, totalProducts);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const toggleWishlist = (productId: string) => {
-    setWishlist(prev => 
-      prev.includes(productId) 
-        ? prev.filter(id => id !== productId)
-        : [...prev, productId]
-    );
+  const toggleWishlist = async (productId: string) => {
+    if (!isAuthenticated) {
+      // TODO: Login modal göster
+      return;
+    }
+
+    try {
+      if (wishlist.includes(productId)) {
+        await removeFromWishlist(productId);
+        setWishlist(prev => prev.filter(id => id !== productId));
+      } else {
+        await addToWishlist(productId);
+        setWishlist(prev => [...prev, productId]);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Wishlist işlemi başarısız.');
+    }
   };
 
   const getPageNumbers = () => {
@@ -112,8 +167,8 @@ export default function ProductsPage() {
     <main className="max-w-7xl mx-auto px-4 py-10 mt-20">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-extrabold mb-2 text-blackheading">Products</h1>
-        <p className="text-gray-600">Discover our amazing collection of products</p>
+        <h1 className="text-4xl font-extrabold mb-2 text-blackheading">Ürünler</h1>
+        <p className="text-gray-600">Harika ürün koleksiyonumuzu keşfedin</p>
       </div>
 
       {/* Search and Filters */}
@@ -125,7 +180,7 @@ export default function ProductsPage() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
                 type="text"
-                placeholder="Search products..."
+                placeholder="Ürün ara..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -183,33 +238,50 @@ export default function ProductsPage() {
         ))}
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div className="text-center py-16">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Ürünler yükleniyor...</p>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md mb-6">
+          {error}
+        </div>
+      )}
+
       {/* Results Info */}
-      <div className="flex justify-between items-center mb-6">
-        <p className="text-gray-600">
-          Showing {startIndex + 1} to {Math.min(endIndex, sorted.length)} of {sorted.length} results
-        </p>
-        <select
-          value={itemsPerPage}
-          onChange={(e) => {
-            setItemsPerPage(Number(e.target.value));
-            setCurrentPage(1);
-          }}
-          className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm"
-        >
-          <option value={12}>12 per page</option>
-          <option value={24}>24 per page</option>
-          <option value={48}>48 per page</option>
-        </select>
-      </div>
+      {!loading && !error && (
+        <div className="flex justify-between items-center mb-6">
+          <p className="text-gray-600">
+            {totalProducts > 0 ? `${startIndex + 1} - ${endIndex} arası ${totalProducts} ürün` : 'Ürün bulunamadı'}
+          </p>
+          <select
+            value={itemsPerPage}
+            onChange={(e) => {
+              setItemsPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm"
+          >
+            <option value={12}>Sayfa başına 12</option>
+            <option value={24}>Sayfa başına 24</option>
+            <option value={48}>Sayfa başına 48</option>
+          </select>
+        </div>
+      )}
 
       {/* Product Grid/List */}
-      {currentProducts.length === 0 ? (
+      {!loading && !error && products.length === 0 ? (
         <div className="text-center py-16">
           <div className="text-gray-400 mb-4">
             <Search className="h-16 w-16 mx-auto" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-600 mb-2">No products found</h3>
-          <p className="text-gray-500">Try adjusting your search or filter criteria</p>
+          <h3 className="text-xl font-semibold text-gray-600 mb-2">Ürün bulunamadı</h3>
+          <p className="text-gray-500">Arama kriterlerinizi değiştirmeyi deneyin</p>
         </div>
       ) : (
         <div className={`${
@@ -217,99 +289,105 @@ export default function ProductsPage() {
             ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
             : 'space-y-4'
         }`}>
-          {currentProducts.map((product) => (
-            <div
-              key={product.id}
-              className={`bg-white rounded-xl border border-gray-200 hover:shadow-xl transition-all duration-300 overflow-hidden group ${
-                viewMode === 'list' ? 'flex' : ''
-              }`}
-            >
-              {/* Product Image */}
-              <div className={`relative ${viewMode === 'list' ? 'w-48 h-48' : 'h-64'}`}>
-                <Link href={`/products/${product.id}`}>
-                  <img
-                    src={product.image}
-                    alt={product.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                </Link>
-                
-                {/* Wishlist Button */}
-                <button
-                  onClick={() => toggleWishlist(product.id)}
-                  className={`absolute top-3 right-3 p-2 rounded-full transition-all duration-200 ${
-                    wishlist.includes(product.id)
-                      ? 'bg-red-500 text-white'
-                      : 'bg-white text-gray-400 hover:text-red-500 hover:bg-red-50'
-                  }`}
-                >
-                  <Heart className={`h-5 w-5 ${wishlist.includes(product.id) ? 'fill-current' : ''}`} />
-                </button>
-
-                {/* Badge */}
-                {product.tag && product.tag !== 'all' && (
-                  <span className="absolute top-3 left-3 px-2 py-1 bg-primary text-white text-xs font-medium rounded-full">
-                    {product.tag}
-                  </span>
-                )}
-              </div>
-
-              {/* Product Info */}
-              <div className={`p-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
-                <Link href={`/products/${product.id}`} className="block">
-                  <h3 className="text-lg font-semibold text-blackheading mb-2 group-hover:text-primary transition-colors">
-                    {product.title}
-                  </h3>
+          {products.map((product) => {
+            const productId = product._id || product.id;
+            const productName = product.name || product.title || 'Ürün';
+            const productImage = product.images?.[0] || product.image || '/placeholder-product.jpg';
+            
+            return (
+              <div
+                key={productId}
+                className={`bg-white rounded-xl border border-gray-200 hover:shadow-xl transition-all duration-300 overflow-hidden group ${
+                  viewMode === 'list' ? 'flex' : ''
+                }`}
+              >
+                {/* Product Image */}
+                <div className={`relative ${viewMode === 'list' ? 'w-48 h-48' : 'h-64'}`}>
+                  <Link href={`/products/${productId}`}>
+                    <img
+                      src={productImage}
+                      alt={productName}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </Link>
                   
-                  {product.description && (
-                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                      {product.description}
-                    </p>
-                  )}
+                  {/* Wishlist Button */}
+                  <button
+                    onClick={() => productId && toggleWishlist(productId)}
+                    className={`absolute top-3 right-3 p-2 rounded-full transition-all duration-200 ${
+                      productId && wishlist.includes(productId)
+                        ? 'bg-red-500 text-white'
+                        : 'bg-white text-gray-400 hover:text-red-500 hover:bg-red-50'
+                    }`}
+                  >
+                    <Heart className={`h-5 w-5 ${productId && wishlist.includes(productId) ? 'fill-current' : ''}`} />
+                  </button>
 
-                  {/* Rating */}
-                  {product.rating && (
-                    <div className="flex items-center mb-3">
-                      <div className="flex items-center">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`h-4 w-4 ${
-                              i < Math.floor(product.rating!)
-                                ? 'text-yellow-400 fill-current'
-                                : 'text-gray-300'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-sm text-gray-500 ml-2">
-                        ({product.rating})
-                      </span>
-                    </div>
+                  {/* Badge */}
+                  {product.featured && (
+                    <span className="absolute top-3 left-3 px-2 py-1 bg-primary text-white text-xs font-medium rounded-full">
+                      Öne Çıkan
+                    </span>
                   )}
+                </div>
 
-                  {/* Price */}
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-2xl font-bold text-primary">
-                        ${product.price.toFixed(2)}
-                      </span>
-                      {product.originalPrice && product.originalPrice > product.price && (
-                        <span className="text-sm text-gray-500 line-through ml-2">
-                          ${product.originalPrice.toFixed(2)}
-                        </span>
-                      )}
-                    </div>
+                {/* Product Info */}
+                <div className={`p-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
+                  <Link href={`/products/${productId}`} className="block">
+                    <h3 className="text-lg font-semibold text-blackheading mb-2 group-hover:text-primary transition-colors">
+                      {productName}
+                    </h3>
                     
-                    {/* Add to Cart Button */}
-                    <button className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium">
-                      Add to Cart
-                    </button>
-                  </div>
-                </Link>
+                    {product.description && (
+                      <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                        {product.description}
+                      </p>
+                    )}
+
+                    {/* Rating */}
+                    {product.rating && (
+                      <div className="flex items-center mb-3">
+                        <div className="flex items-center">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-4 w-4 ${
+                                i < Math.floor(product.rating!)
+                                  ? 'text-yellow-400 fill-current'
+                                  : 'text-gray-300'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-sm text-gray-500 ml-2">
+                          ({product.rating})
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Price */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-2xl font-bold text-primary">
+                          ₺{product.price.toFixed(2)}
+                        </span>
+                        {product.originalPrice && product.originalPrice > product.price && (
+                          <span className="text-sm text-gray-500 line-through ml-2">
+                            ₺{product.originalPrice.toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* Add to Cart Button */}
+                      <button className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium">
+                        Sepete Ekle
+                      </button>
+                    </div>
+                  </Link>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

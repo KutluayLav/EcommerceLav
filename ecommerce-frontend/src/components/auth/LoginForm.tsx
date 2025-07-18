@@ -6,6 +6,7 @@ import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { loginStart, loginSuccess, loginFailure } from '@/features/auth/authSlice';
 import { RootState } from '@/store';
 import { User } from '@/features/auth/authSlice';
+import { login as loginApi } from '@/services/authService';
 
 interface LoginFormProps {
   onSwitchToSignup: () => void;
@@ -32,18 +33,21 @@ export default function LoginForm({ onSwitchToSignup, onForgotPassword }: LoginF
     dispatch(loginStart());
 
     try {
-      // Simulated API call - gerçek uygulamada API çağrısı yapılacak
-      setTimeout(() => {
-        const mockUser: User = {
-          id: '1',
-          name: 'Kullanıcı Adı',
-          email: email,
-          isEmailVerified: true
-        };
-        dispatch(loginSuccess(mockUser));
-      }, 1000);
-    } catch (error) {
-      dispatch(loginFailure('Giriş başarısız. Lütfen tekrar deneyin.'));
+      const res = await loginApi(email, password);
+      const { token } = res.data;
+      localStorage.setItem('token', token);
+      // Kullanıcı profilini çek
+      const profileRes = await import('@/services/authService').then(m => m.getProfile());
+      const userData = profileRes.data;
+      dispatch(loginSuccess({
+        id: userData._id,
+        name: userData.firstName + ' ' + userData.lastName,
+        email: userData.email,
+        isEmailVerified: userData.emailVerified,
+        avatar: userData.avatar || undefined
+      }));
+    } catch (error: any) {
+      dispatch(loginFailure(error.response?.data?.message || 'Giriş başarısız. Lütfen tekrar deneyin.'));
     }
   };
 

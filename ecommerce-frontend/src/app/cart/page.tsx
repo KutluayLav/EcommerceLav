@@ -1,26 +1,39 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '@/store';
-import { removeFromCart, updateQuantity } from '@/features/cart/cartSlice';
+import { RootState, AppDispatch } from '@/store';
+import { fetchCart, removeFromCart, updateQuantity, clearError } from '@/features/cart/cartSlice';
 import Link from 'next/link';
-import { Trash2, Minus, Plus, ShoppingBag, ArrowLeft, Truck, Shield, CreditCard } from 'lucide-react';
+import { Trash2, Minus, Plus, ShoppingBag, ArrowLeft, Truck, Shield, CreditCard, Loader2 } from 'lucide-react';
 
 const TAX_RATE = 0.18;
 const SHIPPING_FEE = 15;
 
 export default function CartPage() {
-  const dispatch = useDispatch();
-  const cartItems = useSelector((state: RootState) => state.cart.items);
+  const dispatch = useDispatch<AppDispatch>();
+  const { items: cartItems, loading, error, total } = useSelector((state: RootState) => state.cart);
 
-  const handleUpdateQuantity = (id: string, newQuantity: number) => {
+  useEffect(() => {
+    dispatch(fetchCart());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        dispatch(clearError());
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, dispatch]);
+
+  const handleUpdateQuantity = (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
-    dispatch(updateQuantity({ id, quantity: newQuantity }));
+    dispatch(updateQuantity({ itemId, quantity: newQuantity }));
   };
 
-  const handleRemoveItem = (id: string) => {
-    dispatch(removeFromCart(id));
+  const handleRemoveItem = (itemId: string) => {
+    dispatch(removeFromCart(itemId));
   };
 
   const subtotal = cartItems.reduce(
@@ -28,7 +41,7 @@ export default function CartPage() {
     0
   );
   const tax = subtotal * TAX_RATE;
-  const total = subtotal + tax + (cartItems.length > 0 ? SHIPPING_FEE : 0);
+  const finalTotal = subtotal + tax + (cartItems.length > 0 ? SHIPPING_FEE : 0);
 
   return (
     <main className="max-w-7xl mx-auto px-4 py-10 mt-20">
@@ -40,12 +53,12 @@ export default function CartPage() {
             className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
-            <span>Continue Shopping</span>
+            <span>Alışverişe Devam Et</span>
           </Link>
         </div>
-        <h1 className="text-4xl font-extrabold text-blackheading">Shopping Cart</h1>
+        <h1 className="text-4xl font-extrabold text-blackheading">Alışveriş Sepeti</h1>
         <p className="text-gray-600 mt-2">
-          {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'} in your cart
+          Sepetinizde {cartItems.length} {cartItems.length === 1 ? 'ürün' : 'ürün'} bulunuyor
         </p>
       </div>
 
@@ -54,14 +67,14 @@ export default function CartPage() {
           <div className="text-gray-400 mb-6">
             <ShoppingBag className="h-24 w-24 mx-auto" />
           </div>
-          <h2 className="text-2xl font-semibold text-gray-600 mb-4">Your cart is empty</h2>
-          <p className="text-gray-500 mb-8">Looks like you haven't added any items to your cart yet.</p>
+          <h2 className="text-2xl font-semibold text-gray-600 mb-4">Sepetiniz boş</h2>
+          <p className="text-gray-500 mb-8">Henüz sepetinize ürün eklememişsiniz.</p>
           <Link
             href="/products"
             className="inline-flex items-center gap-2 bg-primary text-white px-8 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors"
           >
             <ShoppingBag className="h-5 w-5" />
-            Start Shopping
+            Alışverişe Başla
           </Link>
         </div>
       ) : (
@@ -70,93 +83,96 @@ export default function CartPage() {
           <section className="flex-1">
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
               <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-blackheading">Cart Items</h2>
+                <h2 className="text-xl font-semibold text-blackheading">Sepet Ürünleri</h2>
               </div>
               
               <div className="divide-y divide-gray-200">
-                {cartItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="p-6 hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      {/* Product Image */}
-                      <div className="relative w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0">
-                        <img
-                          src={item.image}
-                          alt={item.title}
-                          className="w-full h-full object-cover rounded-lg"
-                        />
-                        {item.originalPrice && item.originalPrice > item.price && (
-                          <span className="absolute -top-2 -left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                            SALE
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Product Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-lg font-semibold text-blackheading truncate">
-                              {item.title}
-                            </h3>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-xl font-bold text-primary">
-                                ${item.price.toFixed(2)}
-                              </span>
-                              {item.originalPrice && item.originalPrice > item.price && (
-                                <span className="text-sm text-gray-500 line-through">
-                                  ${item.originalPrice.toFixed(2)}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          
-                          {/* Remove Button */}
-                          <button
-                            onClick={() => handleRemoveItem(item.id)}
-                            className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors"
-                            title="Remove item"
-                          >
-                            <Trash2 className="h-5 w-5" />
-                          </button>
+                {loading ? (
+                  <div className="p-12 text-center">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+                    <p className="text-gray-600">Sepet yükleniyor...</p>
+                  </div>
+                ) : error ? (
+                  <div className="p-6">
+                    <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-center">
+                      {error}
+                    </div>
+                  </div>
+                ) : (
+                  cartItems.map((item) => (
+                    <div
+                      key={item._id}
+                      className="p-6 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        {/* Product Image */}
+                        <div className="relative w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0">
+                          <img
+                            src={item.product.images && item.product.images.length > 0 ? item.product.images[0] : '/placeholder-product.jpg'}
+                            alt={item.product.name}
+                            className="w-full h-full object-cover rounded-lg"
+                          />
                         </div>
 
-                        {/* Quantity Controls */}
-                        <div className="flex items-center justify-between mt-4">
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm text-gray-600">Quantity:</span>
-                            <div className="flex items-center border border-gray-300 rounded-lg">
-                              <button
-                                onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                                className="p-2 hover:bg-gray-100 transition-colors"
-                                disabled={item.quantity <= 1}
-                              >
-                                <Minus className="h-4 w-4" />
-                              </button>
-                              <span className="px-4 py-2 text-center min-w-[3rem] font-medium">
-                                {item.quantity}
-                              </span>
-                              <button
-                                onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                                className="p-2 hover:bg-gray-100 transition-colors"
-                              >
-                                <Plus className="h-4 w-4" />
-                              </button>
+                        {/* Product Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-lg font-semibold text-blackheading truncate">
+                                {item.product.name}
+                              </h3>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xl font-bold text-primary">
+                                  ₺{item.price.toFixed(2)}
+                                </span>
+                              </div>
                             </div>
+                            
+                            {/* Remove Button */}
+                            <button
+                              onClick={() => handleRemoveItem(item._id)}
+                              className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors"
+                              title="Remove item"
+                            >
+                              <Trash2 className="h-5 w-5" />
+                            </button>
                           </div>
-                          
-                          <div className="text-right">
-                            <span className="text-lg font-semibold text-blackheading">
-                              ${(item.price * item.quantity).toFixed(2)}
-                            </span>
+
+                          {/* Quantity Controls */}
+                          <div className="flex items-center justify-between mt-4">
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm text-gray-600">Adet:</span>
+                              <div className="flex items-center border border-gray-300 rounded-lg">
+                                <button
+                                  onClick={() => handleUpdateQuantity(item._id, item.quantity - 1)}
+                                  className="p-2 hover:bg-gray-100 transition-colors"
+                                  disabled={item.quantity <= 1}
+                                >
+                                  <Minus className="h-4 w-4" />
+                                </button>
+                                <span className="px-4 py-2 text-center min-w-[3rem] font-medium">
+                                  {item.quantity}
+                                </span>
+                                <button
+                                  onClick={() => handleUpdateQuantity(item._id, item.quantity + 1)}
+                                  className="p-2 hover:bg-gray-100 transition-colors"
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                            
+                            <div className="text-right">
+                              <span className="text-lg font-semibold text-blackheading">
+                                ₺{(item.price * item.quantity).toFixed(2)}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </section>
@@ -164,25 +180,25 @@ export default function CartPage() {
           {/* Order Summary */}
           <aside className="w-full lg:w-96">
             <div className="bg-white rounded-xl border border-gray-200 p-6 sticky top-6">
-              <h3 className="text-xl font-semibold text-blackheading mb-6">Order Summary</h3>
+              <h3 className="text-xl font-semibold text-blackheading mb-6">Sipariş Özeti</h3>
               
               {/* Price Breakdown */}
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-gray-600">
-                  <span>Subtotal ({cartItems.length} items)</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>Ara Toplam ({cartItems.length} ürün)</span>
+                  <span>₺{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
-                  <span>Tax (18%)</span>
-                  <span>${tax.toFixed(2)}</span>
+                  <span>KDV (%18)</span>
+                  <span>₺{tax.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
-                  <span>Shipping</span>
-                  <span>${SHIPPING_FEE.toFixed(2)}</span>
+                  <span>Kargo</span>
+                  <span>₺{SHIPPING_FEE.toFixed(2)}</span>
                 </div>
                 <div className="border-t border-gray-200 pt-3 flex justify-between text-lg font-semibold text-blackheading">
-                  <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>Toplam</span>
+                  <span>₺{finalTotal.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -199,7 +215,7 @@ export default function CartPage() {
                 href="/products"
                 className="w-full border border-gray-300 text-gray-700 py-3 rounded-lg text-center font-medium hover:bg-gray-50 transition-colors block"
               >
-                Continue Shopping
+                Alışverişe Devam Et
               </Link>
 
               {/* Trust Indicators */}
@@ -207,15 +223,15 @@ export default function CartPage() {
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 text-sm text-gray-600">
                     <Truck className="h-5 w-5 text-green-500" />
-                    <span>Free shipping on orders over $50</span>
+                    <span>50₺ üzeri ücretsiz kargo</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-gray-600">
                     <Shield className="h-5 w-5 text-blue-500" />
-                    <span>Secure checkout</span>
+                    <span>Güvenli ödeme</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-gray-600">
                     <CreditCard className="h-5 w-5 text-purple-500" />
-                    <span>Multiple payment options</span>
+                    <span>Çoklu ödeme seçenekleri</span>
                   </div>
                 </div>
               </div>

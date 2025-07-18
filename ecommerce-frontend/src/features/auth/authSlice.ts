@@ -69,6 +69,12 @@ const authSlice = createSlice({
     clearError(state) {
       state.error = null;
     },
+    rehydrate(state, action: PayloadAction<AuthState>) {
+      state.user = action.payload.user;
+      state.isAuthenticated = action.payload.isAuthenticated;
+      state.isLoading = false;
+      state.error = null;
+    },
   },
 });
 
@@ -82,6 +88,7 @@ export const {
   verifyEmailSuccess,
   logout,
   clearError,
+  rehydrate,
 } = authSlice.actions;
 
 export default authSlice.reducer; 

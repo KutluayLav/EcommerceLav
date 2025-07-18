@@ -1,14 +1,30 @@
 export type Product = {
-  id: string;
-  title: string;
+  _id?: string;
+  id?: string;
+  name: string;
+  title?: string;
   price: number;
-  image: string;
+  images: string[];
+  image?: string;
   rating?: number;
   originalPrice?: number;
   description?: string;
   popularity?: number;
-  category: 'electronics' | 'books' | 'fashion' | 'home';
+  category: string;
   tag?: 'featured' | 'new' | 'popular' | 'all';
+  stock?: number;
+  specifications?: {
+    [key: string]: string;
+  };
+  tags?: string[];
+  featured?: boolean;
+  popular?: boolean;
+  newArrival?: boolean;
+  variants?: {
+    size?: string;
+    color?: string;
+    stock: number;
+  }[];
 };
 
 export interface Review {
@@ -26,21 +42,49 @@ export interface Review {
   userMarkedHelpful?: boolean; // if current user marked this helpful
 }
 
+export interface OrderItem {
+  product: {
+    _id: string;
+    name: string;
+    price: number;
+    images: string[];
+  };
+  quantity: number;
+  price: number;
+  variant?: {
+    size?: string;
+    color?: string;
+  };
+}
+
 export interface Order {
-  id: string;
-  date: string; 
-  total: number;
-  status: string;
+  _id: string;
+  user: string;
+  items: OrderItem[];
+  totalPrice: number;
+  shippingAddress: {
+    street: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
+  status: 'pending' | 'confirmed' | 'shipped' | 'delivered';
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Address {
-  id: string;
-  label: string;
-  addressLine1: string;
+  id?: string;
+  _id?: string;
+  label?: string;
+  addressLine1?: string;
+  street?: string;
   addressLine2?: string;
   city: string;
   state?: string;
-  zipCode: string;
+  zipCode?: string;
+  postalCode?: string;
   country: string;
   phone?: string;
 }

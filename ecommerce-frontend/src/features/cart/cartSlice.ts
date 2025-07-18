@@ -1,86 +1,174 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Product } from '@/types';
-
-interface CartItem extends Product {
-  quantity: number;
-}
+import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
+import { CartItem, CartResponse, getCart, addToCart as addToCartAPI, removeFromCart as removeFromCartAPI, updateCartItemQuantity as updateCartItemQuantityAPI, clearCart as clearCartAPI } from '@/services/cartService';
+import { logout } from '@/features/auth/authSlice';
 
 interface CartState {
   items: CartItem[];
+  loading: boolean;
+  error: string | null;
+  total: number;
 }
 
-// Örnek cart verileri
-const sampleCartItems: CartItem[] = [
-  {
-    id: 'fp1',
-    title: 'Wireless Headphones',
-    price: 199.99,
-    originalPrice: 249.99,
-    image: 'https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=crop&w=400&q=80',
-    category: 'electronics',
-    tag: 'featured',
-    rating: 4.6,
-    popularity: 95,
-    description: 'Premium wireless headphones with noise cancellation and 30-hour battery life.',
-    quantity: 2,
-  },
-  {
-    id: 'fp2',
-    title: 'Smartphone',
-    price: 699.99,
-    originalPrice: 799.99,
-    image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=400&q=80',
-    category: 'electronics',
-    tag: 'featured',
-    rating: 4.8,
-    popularity: 98,
-    description: 'Latest smartphone with advanced camera system and powerful processor.',
-    quantity: 1,
-  },
-  {
-    id: 'na1',
-    title: 'VR Headset',
-    price: 299.99,
-    image: 'https://images.unsplash.com/photo-1606813909289-1056b4d9a12b?auto=format&fit=crop&w=400&q=80',
-    category: 'electronics',
-    tag: 'new',
-    rating: 4.4,
-    popularity: 78,
-    description: 'Immersive virtual reality headset for gaming and entertainment.',
-    quantity: 1,
-  },
-];
-
 const initialState: CartState = {
-  items: sampleCartItems, // Örnek verilerle başlat
+  items: [],
+  loading: false,
+  error: null,
+  total: 0,
 };
+
+// Async thunks
+export const fetchCart = createAsyncThunk(
+  'cart/fetchCart',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getCart();
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Sepet yüklenemedi');
+    }
+  }
+);
+
+export const addToCart = createAsyncThunk(
+  'cart/addToCart',
+  async ({ productId, quantity }: { productId: string; quantity: number }, { rejectWithValue }) => {
+    try {
+      const response = await addToCartAPI(productId, quantity);
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Ürün sepete eklenemedi');
+    }
+  }
+);
+
+export const removeFromCart = createAsyncThunk(
+  'cart/removeFromCart',
+  async (itemId: string, { rejectWithValue }) => {
+    try {
+      await removeFromCartAPI(itemId);
+      return itemId;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Ürün sepetten çıkarılamadı');
+    }
+  }
+);
+
+export const updateQuantity = createAsyncThunk(
+  'cart/updateQuantity',
+  async ({ itemId, quantity }: { itemId: string; quantity: number }, { rejectWithValue }) => {
+    try {
+      const response = await updateCartItemQuantityAPI(itemId, quantity);
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Miktar güncellenemedi');
+    }
+  }
+);
+
+export const clearCart = createAsyncThunk(
+  'cart/clearCart',
+  async (_, { rejectWithValue }) => {
+    try {
+      await clearCartAPI();
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Sepet temizlenemedi');
+    }
+  }
+);
 
 const cartSlice = createSlice({
   name: 'cart',
   initialState,
   reducers: {
-    addToCart(state, action: PayloadAction<Product>) {
-      const existingItem = state.items.find(item => item.id === action.payload.id);
-      if (existingItem) {
-        existingItem.quantity += 1;
-      } else {
-        state.items.push({ ...action.payload, quantity: 1 });
-      }
+    clearError(state) {
+      state.error = null;
     },
-    removeFromCart(state, action: PayloadAction<string>) {
-      state.items = state.items.filter(item => item.id !== action.payload);
-    },
-    updateQuantity(state, action: PayloadAction<{ id: string; quantity: number }>) {
-      const item = state.items.find(item => item.id === action.payload.id);
-      if (item) {
-        item.quantity = action.payload.quantity;
-      }
-    },
-    clearCart(state) {
-      state.items = [];
-    },
+  },
+  extraReducers: (builder) => {
+    // Fetch cart
+    builder
+      .addCase(fetchCart.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCart.fulfilled, (state, action) => {
+        state.loading = false;
+        state.items = action.payload.items;
+        state.total = action.payload.total;
+      })
+      .addCase(fetchCart.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Add to cart
+      .addCase(addToCart.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(addToCart.fulfilled, (state, action) => {
+        state.loading = false;
+        state.items = action.payload.items;
+        state.total = action.payload.total;
+      })
+      .addCase(addToCart.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Remove from cart
+      .addCase(removeFromCart.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(removeFromCart.fulfilled, (state, action) => {
+        state.loading = false;
+        state.items = state.items.filter(item => item._id !== action.payload);
+      })
+      .addCase(removeFromCart.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Update quantity
+      .addCase(updateQuantity.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateQuantity.fulfilled, (state, action) => {
+        state.loading = false;
+        state.items = action.payload.items;
+        state.total = action.payload.total;
+      })
+      .addCase(updateQuantity.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Clear cart
+      .addCase(clearCart.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(clearCart.fulfilled, (state) => {
+        state.loading = false;
+        state.items = [];
+        state.total = 0;
+      })
+      .addCase(clearCart.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Logout - sepeti temizle
+      .addCase(logout, (state) => {
+        state.items = [];
+        state.total = 0;
+        state.loading = false;
+        state.error = null;
+      });
   },
 });
 
-export const { addToCart, removeFromCart, updateQuantity, clearCart } = cartSlice.actions;
+export const { clearError } = cartSlice.actions;
 export default cartSlice.reducer;

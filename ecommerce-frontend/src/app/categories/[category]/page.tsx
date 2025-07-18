@@ -5,55 +5,72 @@ import { useParams } from 'next/navigation';
 import { Product } from '@/types';
 import ProductCard from '@/components/ProductCard';
 import { Search, List, Grid3X3, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
-
-// Ürünleri merkezi yerden import ediyoruz
-import { allProducts } from '@/data/products';
+import { getProductsByCategory, getCategory } from '@/services/categoryService';
 
 const sortOptions = [
-  { label: 'Latest', value: 'latest' },
-  { label: 'Price: Low to High', value: 'price-asc' },
-  { label: 'Price: High to Low', value: 'price-desc' },
-  { label: 'Rating', value: 'rating' },
-  { label: 'Popularity', value: 'popularity' },
+  { label: 'En Yeni', value: 'latest' },
+  { label: 'Fiyat: Düşükten Yükseğe', value: 'price-asc' },
+  { label: 'Fiyat: Yüksekten Düşüğe', value: 'price-desc' },
+  { label: 'Değerlendirme', value: 'rating' },
+  { label: 'Popülerlik', value: 'popularity' },
 ];
 
 export default function CategoryPage() {
   const { category } = useParams();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categoryData, setCategoryData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('latest');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [totalProducts, setTotalProducts] = useState(0);
 
-  // Eğer category undefined ise tüm ürünler gösterilir, değilse kategoriye göre filtre
-  const filtered: Product[] = allProducts.filter((product) => {
-    const matchesCategory = !category || product.category === category;
-    const matchesSearch = product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!category) return;
+      
+      try {
+        setLoading(true);
+        
+        // Kategori bilgilerini al
+        const categoryResponse = await getCategory(category as string);
+        setCategoryData(categoryResponse.data);
+        
+        // Kategoriye göre ürünleri al
+        const params: any = {
+          page: currentPage,
+          limit: itemsPerPage,
+        };
 
-  // Sort products
-  const sorted = [...filtered].sort((a, b) => {
-    switch (sortBy) {
-      case 'price-asc':
-        return a.price - b.price;
-      case 'price-desc':
-        return b.price - a.price;
-      case 'rating':
-        return (b.rating || 0) - (a.rating || 0);
-      case 'popularity':
-        return (b.popularity || 0) - (a.popularity || 0);
-      default:
-        return 0;
-    }
-  });
+        if (searchTerm) {
+          params.search = searchTerm;
+        }
+
+        if (sortBy !== 'latest') {
+          params.sortBy = sortBy;
+          params.sortOrder = sortBy === 'price-asc' ? 'asc' : 'desc';
+        }
+
+        const productsResponse = await getProductsByCategory(category as string, params);
+        setProducts(productsResponse.data.products || []);
+        setTotalProducts(productsResponse.data.total || 0);
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'Veriler yüklenemedi.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [category, currentPage, itemsPerPage, searchTerm, sortBy]);
 
   // Calculate pagination
-  const totalPages = Math.ceil(sorted.length / itemsPerPage);
+  const totalPages = Math.ceil(totalProducts / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentProducts = sorted.slice(startIndex, endIndex);
+  const endIndex = Math.min(startIndex + itemsPerPage, totalProducts);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -95,28 +112,36 @@ export default function CategoryPage() {
     return pages;
   };
 
-  const getCategoryLabel = (cat: string) => {
-    const labels: { [key: string]: string } = {
-      electronics: 'Electronics',
-      fashion: 'Fashion',
-      books: 'Books',
-      home: 'Home & Garden'
-    };
-    return labels[cat] || cat;
-  };
+  if (loading) {
+    return (
+      <main className="max-w-7xl mx-auto px-4 py-10 mt-20">
+        <div className="text-center py-16">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Ürünler yükleniyor...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="max-w-7xl mx-auto px-4 py-10 mt-20">
+        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
+          {error}
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="max-w-7xl mx-auto px-4 py-10 mt-20">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-extrabold mb-2 text-blackheading capitalize">
-          {category ? getCategoryLabel(category as string) : 'All Products'}
+        <h1 className="text-4xl font-extrabold mb-2 text-blackheading">
+          {categoryData?.name || 'Kategori'}
         </h1>
         <p className="text-gray-600">
-          {category 
-            ? `Discover amazing ${getCategoryLabel(category as string).toLowerCase()} products`
-            : 'Browse our complete collection of products'
-          }
+          {categoryData?.description || 'Bu kategorideki ürünleri keşfedin'}
         </p>
       </div>
 
@@ -129,7 +154,7 @@ export default function CategoryPage() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
                 type="text"
-                placeholder="Search products..."
+                placeholder="Ürün ara..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -173,7 +198,7 @@ export default function CategoryPage() {
       {/* Results Info */}
       <div className="flex justify-between items-center mb-6">
         <p className="text-gray-600">
-          Showing {startIndex + 1} to {Math.min(endIndex, sorted.length)} of {sorted.length} results
+          {totalProducts > 0 ? `${startIndex + 1} - ${endIndex} arası ${totalProducts} ürün` : 'Ürün bulunamadı'}
         </p>
         <select
           value={itemsPerPage}
@@ -183,25 +208,25 @@ export default function CategoryPage() {
           }}
           className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm"
         >
-          <option value={12}>12 per page</option>
-          <option value={24}>24 per page</option>
-          <option value={48}>48 per page</option>
+          <option value={12}>Sayfa başına 12</option>
+          <option value={24}>Sayfa başına 24</option>
+          <option value={48}>Sayfa başına 48</option>
         </select>
       </div>
 
       {/* Ürün Listesi */}
-      {currentProducts.length === 0 ? (
+      {products.length === 0 ? (
         <div className="text-center py-16">
           <div className="text-gray-400 mb-4">
             <Search className="h-16 w-16 mx-auto" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-600 mb-2">No products found</h3>
-          <p className="text-gray-500">Try adjusting your search or filter criteria</p>
+          <h3 className="text-xl font-semibold text-gray-600 mb-2">Ürün bulunamadı</h3>
+          <p className="text-gray-500">Arama kriterlerinizi değiştirmeyi deneyin</p>
         </div>
       ) : (
         <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' : 'space-y-4'}>
-          {currentProducts.map((product) => (
-            <ProductCard key={product.id} product={product} layout={viewMode} />
+          {products.map((product) => (
+            <ProductCard key={product._id || product.id} product={product} layout={viewMode} />
           ))}
         </div>
       )}
