@@ -17,6 +17,20 @@ export default function Navbar() {
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
 
+  // Kullanıcı avatarı için tam url oluşturucu
+  const getUserAvatar = () => {
+    if (!user) return null;
+    if (user.avatar) return user.avatar;
+    if (user.image) {
+      if (user.image.startsWith('http')) return user.image;
+      const url = `http://localhost:5050/uploads/users/${encodeURIComponent(user.image)}`;
+      console.log('Navbar - user.image:', user.image);
+      console.log('Navbar - avatar url:', url);
+      return url;
+    }
+    return null;
+  };
+
   const menuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   
@@ -61,7 +75,8 @@ export default function Navbar() {
                 name: response.data.firstName + ' ' + response.data.lastName,
                 email: response.data.email,
                 isEmailVerified: response.data.emailVerified || false,
-                avatar: response.data.avatar || undefined
+                avatar: response.data.avatar || undefined,
+                image: response.data.image || undefined,
               }));
             }
           }
@@ -168,10 +183,19 @@ export default function Navbar() {
                       onClick={() => setUserMenuOpen(!userMenuOpen)}
                       className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none"
                     >
-                      <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-md">
-                        <span className="text-sm font-bold text-white">
-                          {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
-                        </span>
+                      <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-md overflow-hidden">
+                        {(() => { const avatar = getUserAvatar(); console.log('Navbar - img src:', avatar); return null; })()}
+                        {getUserAvatar() ? (
+                          <img
+                            src={getUserAvatar()}
+                            alt={user.name}
+                            className="h-8 w-8 object-cover rounded-full"
+                          />
+                        ) : (
+                          <span className="text-sm font-bold text-white">
+                            {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                          </span>
+                        )}
                       </div>
                       <span className="hidden lg:block text-sm font-medium text-gray-700">{user.name || 'Kullanıcı'}</span>
                     </button>
@@ -298,10 +322,18 @@ export default function Navbar() {
                 <div className="space-y-2">
                   {/* Compact User Info */}
                   <div className="flex items-center space-x-2 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
-                    <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-sm">
-                      <span className="text-sm font-bold text-white">
-                        {user.name.charAt(0).toUpperCase()}
-                      </span>
+                    <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-sm overflow-hidden">
+                      {getUserAvatar() ? (
+                        <img
+                          src={getUserAvatar()}
+                          alt={user.name}
+                          className="h-8 w-8 object-cover rounded-full"
+                        />
+                      ) : (
+                        <span className="text-sm font-bold text-white">
+                          {user.name.charAt(0).toUpperCase()}
+                        </span>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-gray-900 text-sm truncate">{user.name}</p>

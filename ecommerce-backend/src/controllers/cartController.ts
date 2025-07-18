@@ -148,12 +148,11 @@ export const removeFromCart = async (req: Request, res: Response) => {
     if (!cart) {
       return res.status(404).json({ message: 'Sepet bulunamadı.' });
     }
-    // @ts-ignore
-    const item = cart.items.id(itemId);
-    if (!item) {
+    const beforeCount = cart.items.length;
+    cart.items = cart.items.filter(item => item._id && item._id.toString() !== itemId);
+    if (cart.items.length === beforeCount) {
       return res.status(404).json({ message: 'Ürün sepetinizde bulunamadı.' });
     }
-    item.remove();
     await cart.save();
     await cart.populate('items.product');
     
@@ -177,6 +176,7 @@ export const removeFromCart = async (req: Request, res: Response) => {
       updatedAt: cart.updatedAt
     });
   } catch (err) {
+    console.error('Cart remove error:', err);
     res.status(500).json({ message: 'Ürün sepetten çıkarılamadı.' });
   }
 };

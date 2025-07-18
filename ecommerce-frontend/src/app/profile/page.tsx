@@ -19,9 +19,11 @@ export default function ProfilePage() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [mounted, setMounted] = useState(false);
 
   // Profile verilerini yükle
   useEffect(() => {
+    setMounted(true);
     if (isAuthenticated && user) {
       loadProfileData();
     }
@@ -52,9 +54,12 @@ export default function ProfilePage() {
   };
 
   // Auth kontrolü
+  if (!mounted) {
+    return null;
+  }
   if (!isAuthenticated || !user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col justify-center px-4 py-8 sm:px-6 lg:px-8">
+      <main className="min-h-screen bg-gray-50 flex flex-col justify-center px-4 py-8 sm:px-6 lg:px-8">
         <div className="w-full max-w-md mx-auto bg-white rounded-lg shadow-lg p-6 sm:p-8 text-center">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">Erişim Reddedildi</h2>
           <p className="text-gray-600 mb-6 text-sm sm:text-base">Bu sayfayı görüntülemek için giriş yapmanız gerekiyor.</p>
@@ -65,27 +70,27 @@ export default function ProfilePage() {
             Giriş Yap
           </Link>
         </div>
-      </div>
+      </main>
     );
   }
 
   // Loading durumu
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col justify-center px-4 py-8 sm:px-6 lg:px-8 mt-20">
+      <main className="min-h-screen bg-gray-50 flex flex-col justify-center px-4 py-8 sm:px-6 lg:px-8 mt-20">
         <div className="w-full max-w-md mx-auto bg-white rounded-lg shadow-lg p-6 sm:p-8 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Profil Yükleniyor...</h2>
           <p className="text-gray-600">Lütfen bekleyin</p>
         </div>
-      </div>
+      </main>
     );
   }
 
   // Hata durumu
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col justify-center px-4 py-8 sm:px-6 lg:px-8 mt-20">
+      <main className="min-h-screen bg-gray-50 flex flex-col justify-center px-4 py-8 sm:px-6 lg:px-8 mt-20">
         <div className="w-full max-w-md mx-auto bg-white rounded-lg shadow-lg p-6 sm:p-8 text-center">
           <h2 className="text-xl font-bold text-gray-900 mb-2">Hata Oluştu</h2>
           <p className="text-gray-600 mb-4">{error}</p>
@@ -97,7 +102,7 @@ export default function ProfilePage() {
             Tekrar Dene
           </button>
         </div>
-      </div>
+      </main>
     );
   }
 

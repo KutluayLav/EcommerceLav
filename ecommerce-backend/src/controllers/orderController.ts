@@ -55,6 +55,20 @@ export const getOrder = async (req: Request, res: Response) => {
   }
 };
 
+// Kullanıcının kendi siparişlerini getir (ürün adıyla birlikte)
+export const getUserOrders = async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore
+    const userId = req.user.userId;
+    const orders = await Order.find({ user: userId })
+      .populate('items.product')
+      .sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ message: 'Siparişler getirilemedi.' });
+  }
+};
+
 export const createOrder = async (req: Request, res: Response) => {
   try {
     // @ts-ignore
@@ -115,14 +129,12 @@ export const createOrder = async (req: Request, res: Response) => {
     // Sepeti temizle
     await Cart.findOneAndDelete({ user: userId });
 
+    // Siparişi ürünlerle birlikte populate et
+    const populatedOrder = await Order.findById(order._id).populate('items.product');
+
     res.status(201).json({
       message: 'Sipariş başarıyla oluşturuldu.',
-      order: {
-        _id: order._id,
-        totalPrice: order.totalPrice,
-        status: order.status,
-        createdAt: order.createdAt
-      }
+      order: populatedOrder
     });
 
   } catch (err) {

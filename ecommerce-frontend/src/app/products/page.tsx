@@ -7,7 +7,7 @@ import { Search, Filter, Heart, Star, ChevronLeft, ChevronRight, Grid, List } fr
 import { getProducts } from '@/services/productService';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
-import { addToWishlist, removeFromWishlist } from '@/services/userService';
+import { addToWishlist, removeFromWishlist, getUserWishlist } from '@/services/userService';
 
 const tabs = [
   { label: 'Tümü', value: 'all' },
@@ -99,6 +99,27 @@ export default function ProductsPage() {
     fetchProducts();
   }, [currentPage, itemsPerPage, searchTerm, selectedCategory, sortBy]);
 
+  // Fetch wishlist when user is authenticated
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      if (isAuthenticated) {
+        try {
+          const response = await getUserWishlist();
+          // Eğer response.data bir dizi ürün objesi ise, sadece id'leri al:
+          const ids = Array.isArray(response.data)
+            ? response.data.map((item: any) => item._id || item)
+            : [];
+          setWishlist(ids);
+        } catch (err) {
+          setWishlist([]); // Hata olursa boşalt
+        }
+      } else {
+        setWishlist([]); // Çıkış yapınca temizle
+      }
+    };
+    fetchWishlist();
+  }, [isAuthenticated]);
+
   // Calculate pagination
   const totalPages = Math.ceil(totalProducts / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -182,7 +203,10 @@ export default function ProductsPage() {
                 type="text"
                 placeholder="Ürün ara..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1); // Arama değişince başa dön
+                }}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -192,7 +216,10 @@ export default function ProductsPage() {
           <div className="flex gap-3">
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
+              onChange={(e) => {
+                setSortBy(e.target.value);
+                setCurrentPage(1); // Sıralama değişince başa dön
+              }}
               className="px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               {sortOptions.map((option) => (
@@ -226,7 +253,10 @@ export default function ProductsPage() {
         {tabs.map((tab) => (
           <button
             key={tab.value}
-            onClick={() => setSelectedCategory(tab.value)}
+            onClick={() => {
+              setSelectedCategory(tab.value);
+              setCurrentPage(1); // Tab değişince sayfa başa dönsün
+            }}
             className={`px-6 py-3 rounded-full border text-sm font-medium transition-all duration-200 ${
               selectedCategory === tab.value
                 ? 'bg-primary text-white border-primary shadow-lg'
@@ -379,7 +409,7 @@ export default function ProductsPage() {
                       </div>
                       
                       {/* Add to Cart Button */}
-                      <button className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium">
+                      <button className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-mediu cursor-pointer">
                         Sepete Ekle
                       </button>
                     </div>

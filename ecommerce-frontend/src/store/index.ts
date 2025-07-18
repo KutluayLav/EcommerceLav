@@ -3,6 +3,7 @@ import { persistStore, persistReducer } from 'redux-persist';
 import cartReducer from '@/features/cart/cartSlice';
 import authReducer from '@/features/auth/authSlice';
 import reviewsReducer from '@/features/reviews/reviewsSlice';
+import type { Reducer } from '@reduxjs/toolkit';
 
 // Client-side storage için güvenli storage
 const createNoopStorage = () => {
@@ -35,8 +36,8 @@ const cartPersistConfig = {
 
 export const store = configureStore({
   reducer: {
-    cart: persistReducer(cartPersistConfig, cartReducer),
-    auth: persistReducer(authPersistConfig, authReducer),
+    cart: persistReducer(cartPersistConfig, cartReducer) as Reducer,
+    auth: persistReducer(authPersistConfig, authReducer) as Reducer,
     reviews: reviewsReducer,
   },
   middleware: (getDefaultMiddleware) =>

@@ -3,6 +3,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getCategories } from '@/services/categoryService';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
+import { getUserWishlist, addToWishlist, removeFromWishlist } from '@/services/userService';
+import { Heart } from 'lucide-react';
 
 interface Category {
   _id: string;
@@ -13,9 +17,11 @@ interface Category {
 }
 
 export default function CategoriesPage() {
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [wishlist, setWishlist] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -29,9 +35,40 @@ export default function CategoriesPage() {
         setLoading(false);
       }
     };
-
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      if (isAuthenticated) {
+        try {
+          const response = await getUserWishlist();
+          const ids = Array.isArray(response.data)
+            ? response.data.map((item: any) => item._id || item)
+            : [];
+          setWishlist(ids);
+        } catch (err) {
+          setWishlist([]);
+        }
+      } else {
+        setWishlist([]);
+      }
+    };
+    fetchWishlist();
+  }, [isAuthenticated]);
+
+  const toggleWishlist = async (categoryId: string) => {
+    if (!isAuthenticated) return;
+    try {
+      if (wishlist.includes(categoryId)) {
+        await removeFromWishlist(categoryId);
+        setWishlist(prev => prev.filter(id => id !== categoryId));
+      } else {
+        await addToWishlist(categoryId);
+        setWishlist(prev => [...prev, categoryId]);
+      }
+    } catch (err) {}
+  };
 
   const getCategoryIcon = (categoryName: string) => {
     const name = categoryName.toLowerCase();
@@ -82,7 +119,7 @@ export default function CategoriesPage() {
           <Link
             key={category._id}
             href={`/categories/${category._id}`}
-            className="bg-white border border-gray-200 hover:border-primary rounded-xl shadow-sm p-6 flex flex-col items-center text-center transition-all duration-300 hover:shadow-lg"
+            className="bg-white border border-gray-200 hover:border-primary rounded-xl shadow-sm p-6 flex flex-col items-center text-center transition-all duration-300 hover:shadow-lg relative"
           >
             <span className="text-4xl mb-2">{getCategoryIcon(category.name)}</span>
             <h2 className="text-lg font-bold text-blackheading mb-2">{category.name}</h2>

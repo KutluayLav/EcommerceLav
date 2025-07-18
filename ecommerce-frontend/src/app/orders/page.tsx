@@ -5,31 +5,45 @@ import { RootState } from '@/store';
 import Link from 'next/link';
 import { ArrowLeft, Package, Truck, CheckCircle, Clock } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getUserOrders } from '@/services/userService';
+import { getUserOrders } from '@/services/orderService'; // Doğru import
 import { Order } from '@/types';
 
 export default function OrdersPage() {
+  const [mounted, setMounted] = useState(false);
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  useEffect(() => { setMounted(true); }, []);
+
   useEffect(() => {
+    if (!mounted) return;
     const fetchOrders = async () => {
       try {
-        const response = await getUserOrders();
-        setOrders(response.data);
+        const orders = await getUserOrders();
+        console.log('API getUserOrders cevabı:', orders);
+        setOrders(orders); // Doğrudan Order[]
       } catch (err: any) {
+        console.log('Siparişler yüklenirken hata:', err);
         setError(err.response?.data?.message || 'Siparişler yüklenemedi.');
       } finally {
         setLoading(false);
       }
     };
-
     if (isAuthenticated) {
+      console.log('Kullanıcı authenticated, siparişler çekiliyor...');
       fetchOrders();
+    } else {
+      console.log('Kullanıcı authenticated değil, sipariş çekilmeyecek.');
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, mounted]);
+
+  useEffect(() => {
+    console.log('orders state güncellendi:', orders);
+  }, [orders]);
+
+  if (!mounted) return null;
 
   // Auth kontrolü
   if (!isAuthenticated || !user) {
@@ -128,12 +142,11 @@ export default function OrdersPage() {
         )}
 
         {/* Orders List */}
-        {!loading && !error && (
+        {!loading && !error && Array.isArray(orders) && orders.length > 0 && (
           <div className="bg-white rounded-lg shadow-sm">
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">Sipariş Geçmişi</h2>
             </div>
-            
             <div className="divide-y divide-gray-200">
               {orders.map((order) => (
                 <div key={order._id} className="p-6">
@@ -148,19 +161,17 @@ export default function OrdersPage() {
                           </span>
                         </div>
                       </div>
-                      
                       <div className="space-y-1 text-sm text-gray-600">
                         <p>Sipariş tarihi: {new Date(order.createdAt).toLocaleDateString('tr-TR', { 
                           year: 'numeric', 
                           month: 'long', 
                           day: 'numeric' 
                         })}</p>
-                        <p>Ürünler: {order.items.map(item => `${item.product.name} (${item.quantity} adet)`).join(', ')}</p>
+                        <p>Ürünler: {order.items.map(item => `${item.product?.name || 'Ürün adı yok'} (${item.quantity} adet)`).join(', ')}</p>
                         <p>Toplam: ₺{order.totalPrice.toFixed(2)}</p>
                         <p>Teslimat adresi: {order.shippingAddress.street}, {order.shippingAddress.city}</p>
                       </div>
                     </div>
-                    
                     <div className="mt-4 sm:mt-0 sm:ml-6 text-right">
                       <p className="text-lg font-medium text-gray-900">₺{order.totalPrice.toFixed(2)}</p>
                       <div className="flex flex-col sm:items-end space-y-2 mt-2">
@@ -182,7 +193,7 @@ export default function OrdersPage() {
         )}
 
         {/* Empty State (if no orders) */}
-        {!loading && !error && orders.length === 0 && (
+        {!loading && !error && Array.isArray(orders) && orders.length === 0 && (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
             <Package className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Henüz siparişiniz yok</h3>

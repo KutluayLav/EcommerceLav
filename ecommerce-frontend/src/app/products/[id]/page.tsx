@@ -20,6 +20,7 @@ export default function ProductDetailPage() {
   const [error, setError] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [showNotification, setShowNotification] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -72,20 +73,14 @@ export default function ProductDetailPage() {
   const increaseQty = () => setQuantity((q) => Math.min(q + 1, 99));
   const decreaseQty = () => setQuantity((q) => Math.max(q - 1, 1));
 
-  const handleAddToCart = async () => {
-    if (!product || addingToCart) return;
-    
-    const productId = product._id || product.id;
-    if (!productId) {
-      console.error('Ürün ID bulunamadı');
-      return;
-    }
-    
+  const handleAddToCart = async (productId: string) => {
     setAddingToCart(true);
     try {
       await dispatch(addToCart({ productId, quantity })).unwrap();
+      setShowNotification(true);
+      setTimeout(() => setShowNotification(false), 2000); // 2 saniye göster
     } catch (error) {
-      console.error('Sepete eklenemedi:', error);
+      // Hata yönetimi (isteğe bağlı)
     } finally {
       setAddingToCart(false);
     }
@@ -93,6 +88,11 @@ export default function ProductDetailPage() {
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 mt-20" style={{ color: 'var(--color-darkgray)' }}>
+      {showNotification && (
+        <div className="fixed top-6 right-6 bg-green-600 text-white px-6 py-3 rounded shadow-lg z-50 transition">
+          Ürün sepete eklendi!
+        </div>
+      )}
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
         {/* Image Gallery - For now only main image */}
         <div className="lg:w-1/2 rounded-lg overflow-hidden shadow-lg">
@@ -193,9 +193,9 @@ export default function ProductDetailPage() {
             </div>
             <button
               type="button"
-              onClick={handleAddToCart}
+              onClick={() => handleAddToCart(product._id || product.id || '')}
               disabled={!product.stock || product.stock <= 0 || addingToCart}
-              className={`ml-auto font-semibold px-6 py-2 rounded transition flex items-center gap-2 ${
+              className={`ml-auto font-semibold px-6 py-2 rounded transition flex items-center gap-2 cursor-pointer ${
                 product.stock && product.stock > 0 && !addingToCart
                   ? 'bg-primary text-bgwhite hover:bg-red-700'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'

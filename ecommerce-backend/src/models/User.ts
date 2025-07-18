@@ -27,6 +27,7 @@ export interface UserDocument extends Document {
   passwordResetExpires?: Date;
   emailVerificationToken?: string;
   wishlist: Types.ObjectId[];
+  image?: string | null; // Profil resmi dosya adı veya url'si
 }
 
 const AddressSchema = new Schema<Address>({
@@ -54,6 +55,7 @@ const UserSchema = new Schema<UserDocument>({
   passwordResetExpires: { type: Date },
   emailVerificationToken: { type: String },
   wishlist: [{ type: Schema.Types.ObjectId, ref: 'Product', default: [] }],
+  image: { type: String, default: null }, // Profil resmi
 }, { timestamps: true });
 
 export default mongoose.model<UserDocument>('User', UserSchema); 

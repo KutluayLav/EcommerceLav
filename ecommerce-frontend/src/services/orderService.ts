@@ -51,8 +51,8 @@ export const createOrder = async (orderData: CreateOrderRequest): Promise<Order>
 
 // Kullanıcının siparişlerini getir
 export const getUserOrders = async (): Promise<Order[]> => {
-  const response = await api.get('/orders');
-  return response.data;
+  const response = await api.get('/orders/user'); // yeni endpoint
+  return response.data; // sadece orders dizisini döndür
 };
 
 // Sipariş detayını getir

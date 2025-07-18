@@ -11,17 +11,21 @@ import { useState } from 'react';
 type ProductCardProps = {
   product: Product;
   layout?: 'grid' | 'list';
+  wishlist?: string[];
+  toggleWishlist?: (productId: string) => void;
+  isAuthenticated?: boolean;
 };
 
-export default function ProductCard({ product, layout = 'grid' }: ProductCardProps) {
+export default function ProductCard({ product, layout = 'grid', wishlist = [], toggleWishlist, isAuthenticated }: ProductCardProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const [wishlist, setWishlist] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
+  const productId: string = (product._id || product.id) as string;
+  const isWishlisted = wishlist.includes(productId);
 
-  const toggleWishlist = (e: React.MouseEvent) => {
+  const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setWishlist(!wishlist);
+    if (toggleWishlist) toggleWishlist(productId);
   };
 
   const handleAddToCart = async (e: React.MouseEvent) => {
@@ -30,7 +34,6 @@ export default function ProductCard({ product, layout = 'grid' }: ProductCardPro
     
     if (addingToCart) return;
     
-    const productId = product._id || product.id;
     if (!productId) {
       console.error('Ürün ID bulunamadı');
       return;
@@ -58,16 +61,18 @@ export default function ProductCard({ product, layout = 'grid' }: ProductCardPro
             alt={product.name}
             className="h-full w-full object-cover rounded"
           />
-          <button
-            onClick={toggleWishlist}
-            className={`absolute top-1 right-1 p-1 rounded-full transition-all duration-200 ${
-              wishlist
-                ? 'bg-red-500 text-white'
-                : 'bg-white text-gray-400 hover:text-red-500 hover:bg-red-50'
-            }`}
-          >
-            <Heart className={`h-4 w-4 ${wishlist ? 'fill-current' : ''}`} />
-          </button>
+          {isAuthenticated && (
+            <button
+              onClick={handleWishlist}
+              className={`absolute top-1 right-1 p-1 rounded-full transition-all duration-200 ${
+                isWishlisted
+                  ? 'bg-red-500 text-white'
+                  : 'bg-white text-gray-400 hover:text-red-500 hover:bg-red-50'
+              }`}
+            >
+              <Heart className={`h-4 w-4 ${isWishlisted ? 'fill-current' : ''}`} />
+            </button>
+          )}
         </div>
         
         <div className="flex flex-col flex-grow">
@@ -146,18 +151,18 @@ export default function ProductCard({ product, layout = 'grid' }: ProductCardPro
           alt={product.name}
           className="h-full w-full object-cover rounded group-hover:scale-105 transition-transform duration-300"
         />
-        
-        {/* Wishlist Button */}
-        <button
-          onClick={toggleWishlist}
-          className={`absolute top-2 right-2 p-2 rounded-full transition-all duration-200 ${
-            wishlist
-              ? 'bg-red-500 text-white'
-              : 'bg-white text-gray-400 hover:text-red-500 hover:bg-red-50'
-          }`}
-        >
-          <Heart className={`h-4 w-4 ${wishlist ? 'fill-current' : ''}`} />
-        </button>
+        {isAuthenticated && (
+          <button
+            onClick={handleWishlist}
+            className={`absolute top-2 right-2 p-2 rounded-full transition-all duration-200 ${
+              isWishlisted
+                ? 'bg-red-500 text-white'
+                : 'bg-white text-gray-400 hover:text-red-500 hover:bg-red-50'
+            }`}
+          >
+            <Heart className={`h-4 w-4 ${isWishlisted ? 'fill-current' : ''}`} />
+          </button>
+        )}
 
         {/* Badge */}
         {product.tag && product.tag !== 'all' && (

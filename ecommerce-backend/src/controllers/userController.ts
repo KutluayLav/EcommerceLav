@@ -5,6 +5,8 @@ import jwt from 'jsonwebtoken';
 import { sendEmail } from '../utils/email';
 import crypto from 'crypto';
 import Order from '../models/Order';
+import fs from 'fs';
+import path from 'path';
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -346,5 +348,32 @@ export const getUserReviews = async (req: Request, res: Response) => {
     res.json([]);
   } catch (err) {
     res.status(500).json({ message: 'Kullanıcı yorumları alınamadı.' });
+  }
+};
+
+// Kullanıcı profil resmi yükleme
+export const uploadAvatar = async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore
+    const userId = req.user.userId;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ message: 'Resim dosyası yüklenmedi.' });
+    }
+    // Eski resmi sil (varsa)
+    if (user.image) {
+      const oldPath = path.join(__dirname, '../uploads/users', user.image);
+      if (fs.existsSync(oldPath)) {
+        fs.unlinkSync(oldPath);
+      }
+    }
+    user.image = req.file.filename;
+    await user.save();
+    res.json({ message: 'Profil resmi güncellendi.', image: user.image });
+  } catch (err) {
+    res.status(500).json({ message: 'Profil resmi yüklenemedi.' });
   }
 };

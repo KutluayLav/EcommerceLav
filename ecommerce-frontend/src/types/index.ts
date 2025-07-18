@@ -95,11 +95,14 @@ export interface ProfileSettings {
 }
 
 export type User = {
+  id?: string;
+  avatar?: string;
+  isEmailVerified?: boolean;
   name: string;
   role: string;
   email: string;
   phone: string;
-  avatarUrl: string;
+  image?: string | null | undefined; // Profil resmi dosya adı
   bio: string;
   lastLogin: string;
   orders: number;
@@ -113,5 +116,16 @@ export type User = {
   profileSettings: {
     receiveNewsletter: boolean;
     preferredLanguage: string;
+  };
+};
+
+export type CartItem = {
+  _id: string;
+  price: number;
+  quantity: number;
+  product: {
+    _id: string;
+    name: string;
+    images: string[];
   };
 };

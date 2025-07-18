@@ -20,3 +20,16 @@ const fileFilter = (req: any, file: any, cb: any) => {
 };
 
 export const upload = multer({ storage, fileFilter });
+
+// Kullanıcı profil resmi için özel storage
+const userAvatarStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, '../uploads/users'));
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + '-' + file.originalname);
+  },
+});
+
+export const uploadUserAvatar = multer({ storage: userAvatarStorage, fileFilter });

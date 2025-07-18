@@ -6,6 +6,10 @@ import { Product } from '@/types';
 import ProductCard from '@/components/ProductCard';
 import { Search, List, Grid3X3, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { getProductsByCategory, getCategory } from '@/services/categoryService';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
+import { getUserWishlist, addToWishlist, removeFromWishlist } from '@/services/userService';
+import { Heart } from 'lucide-react';
 
 const sortOptions = [
   { label: 'En Yeni', value: 'latest' },
@@ -27,6 +31,8 @@ export default function CategoryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
   const [totalProducts, setTotalProducts] = useState(0);
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const [wishlist, setWishlist] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -66,6 +72,38 @@ export default function CategoryPage() {
 
     fetchData();
   }, [category, currentPage, itemsPerPage, searchTerm, sortBy]);
+
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      if (isAuthenticated) {
+        try {
+          const response = await getUserWishlist();
+          const ids = Array.isArray(response.data)
+            ? response.data.map((item: any) => item._id || item)
+            : [];
+          setWishlist(ids);
+        } catch (err) {
+          setWishlist([]);
+        }
+      } else {
+        setWishlist([]);
+      }
+    };
+    fetchWishlist();
+  }, [isAuthenticated]);
+
+  const toggleWishlist = async (productId: string) => {
+    if (!isAuthenticated) return;
+    try {
+      if (wishlist.includes(productId)) {
+        await removeFromWishlist(productId);
+        setWishlist(prev => prev.filter(id => id !== productId));
+      } else {
+        await addToWishlist(productId);
+        setWishlist(prev => [...prev, productId]);
+      }
+    } catch (err) {}
+  };
 
   // Calculate pagination
   const totalPages = Math.ceil(totalProducts / itemsPerPage);
@@ -226,7 +264,14 @@ export default function CategoryPage() {
       ) : (
         <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' : 'space-y-4'}>
           {products.map((product) => (
-            <ProductCard key={product._id || product.id} product={product} layout={viewMode} />
+            <ProductCard
+              key={product._id || product.id}
+              product={product}
+              layout={viewMode}
+              wishlist={wishlist}
+              toggleWishlist={toggleWishlist}
+              isAuthenticated={isAuthenticated}
+            />
           ))}
         </div>
       )}

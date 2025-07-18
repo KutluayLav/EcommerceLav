@@ -6,6 +6,7 @@ export interface User {
   email: string;
   avatar?: string;
   isEmailVerified: boolean;
+  image?: string | null;
 }
 
 interface AuthState {
@@ -69,6 +70,11 @@ const authSlice = createSlice({
     clearError(state) {
       state.error = null;
     },
+    setUserImage(state, action: PayloadAction<string>) {
+      if (state.user) {
+        state.user.image = action.payload;
+      }
+    },
     rehydrate(state, action: PayloadAction<AuthState>) {
       state.user = action.payload.user;
       state.isAuthenticated = action.payload.isAuthenticated;
@@ -88,6 +94,7 @@ export const {
   verifyEmailSuccess,
   logout,
   clearError,
+  setUserImage,
   rehydrate,
 } = authSlice.actions;
 

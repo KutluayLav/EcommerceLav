@@ -1,10 +1,12 @@
 import express from 'express';
-import { getOrders, getOrder, updateOrderStatus, createOrder } from '../controllers/orderController';
+import { getOrders, getOrder, updateOrderStatus, createOrder, getUserOrders } from '../controllers/orderController';
 import { authMiddleware } from '../middlewares/authMiddleware';
 import { adminMiddleware } from '../middlewares/adminMiddleware';
 
 const router = express.Router();
 
+// Kullanıcı kendi sipariş geçmişini görebilsin (ÖNCE TANIMLANMALI)
+router.get('/user', authMiddleware, getUserOrders);
 // Sipariş oluştur (müşteri için)
 router.post('/', authMiddleware, createOrder);
 // Siparişleri listele (admin için)

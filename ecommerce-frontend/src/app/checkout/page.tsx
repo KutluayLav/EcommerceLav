@@ -5,8 +5,9 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/store';
 import { clearCart } from '@/features/cart/cartSlice';
 import { createOrder, getUserAddresses, ShippingAddress } from '@/services/orderService';
-import { Loader2, MapPin, Plus, Check } from 'lucide-react';
+import { Loader2, MapPin, Plus, Check, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import type { CartItem } from '@/types/index';
 
 export default function CheckoutPage() {
   const dispatch = useDispatch<AppDispatch>();
@@ -111,7 +112,7 @@ export default function CheckoutPage() {
     
     try {
       // Sepet öğelerini order formatına çevir
-      const orderItems = cartItems.map(item => ({
+      const orderItems = cartItems.map((item: CartItem) => ({
         product: {
           _id: item.product._id,
           name: item.product.name,
@@ -173,6 +174,13 @@ export default function CheckoutPage() {
 
   return (
     <main className="max-w-6xl mx-auto px-4 py-10 mt-20">
+      {/* Geri Dön Linki */}
+      <div className="mb-6">
+        <Link href="/cart" className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors">
+          <ArrowLeft className="h-5 w-5" />
+          <span>Sepete Dön</span>
+        </Link>
+      </div>
       <h1 className="text-4xl font-extrabold mb-10 text-blackheading">Ödeme</h1>
 
       {error && (
@@ -351,7 +359,7 @@ export default function CheckoutPage() {
               
               {/* Order Items */}
               <div className="space-y-3 mb-6">
-                {cartItems.map((item) => (
+                {cartItems.map((item: CartItem) => (
                   <div key={item._id} className="flex items-center gap-3">
                     <img
                       src={item.product.images && item.product.images.length > 0 ? item.product.images[0] : '/placeholder-product.jpg'}

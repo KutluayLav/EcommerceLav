@@ -84,5 +84,16 @@ export default function VerifyEmailPage() {
   }
 
   // Token veya email yoksa normal AuthContainer'ı göster
-  return <AuthContainer />;
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center px-4 py-8 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md mx-auto bg-white rounded-lg shadow-lg p-6 sm:p-8 text-center">
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Email Doğrulama</h2>
+        <p className="text-gray-600 mb-4">
+          Lütfen email adresinize gelen doğrulama linkine tıklayarak hesabınızı onaylayın.<br/>
+          Doğrulama kodu girmenize gerek yoktur. Emaildeki linke tıklamanız yeterlidir.
+        </p>
+        <AuthContainer />
+      </div>
+    </div>
+  );
 } 

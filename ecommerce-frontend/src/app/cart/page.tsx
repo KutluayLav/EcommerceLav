@@ -6,6 +6,7 @@ import { RootState, AppDispatch } from '@/store';
 import { fetchCart, removeFromCart, updateQuantity, clearError } from '@/features/cart/cartSlice';
 import Link from 'next/link';
 import { Trash2, Minus, Plus, ShoppingBag, ArrowLeft, Truck, Shield, CreditCard, Loader2 } from 'lucide-react';
+import type { CartItem } from '@/types/index';
 
 const TAX_RATE = 0.18;
 const SHIPPING_FEE = 15;
@@ -37,7 +38,7 @@ export default function CartPage() {
   };
 
   const subtotal = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (sum: number, item: CartItem) => sum + item.price * item.quantity,
     0
   );
   const tax = subtotal * TAX_RATE;
@@ -99,7 +100,7 @@ export default function CartPage() {
                     </div>
                   </div>
                 ) : (
-                  cartItems.map((item) => (
+                  cartItems.map((item: CartItem) => (
                     <div
                       key={item._id}
                       className="p-6 hover:bg-gray-50 transition-colors"

@@ -14,9 +14,12 @@ import {
   addWishlist,
   removeWishlist,
   getOrderHistory,
-  getUserReviews
+  getUserReviews,
+  uploadAvatar
 } from '../controllers/userController';
+import { getUserOrders } from '../controllers/orderController';
 import { authMiddleware } from '../middlewares/authMiddleware';
+import { uploadUserAvatar } from '../middlewares/uploadMiddleware';
 
 const router = express.Router();
 
@@ -29,6 +32,9 @@ router.post('/reset-password', resetPassword);
 // Profil
 router.get('/profile', authMiddleware, getProfile);
 router.put('/profile', authMiddleware, updateProfile);
+
+// Profil resmi yükleme
+router.post('/upload-avatar', authMiddleware, uploadUserAvatar.single('image'), uploadAvatar);
 
 // Adresler
 router.get('/addresses', authMiddleware, getAddresses);
