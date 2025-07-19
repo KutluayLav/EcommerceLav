@@ -42,6 +42,8 @@ export default function DashboardPage() {
         getUserReviews()
       ]);
 
+      console.log('Dashboard - getUserReviews response:', reviewsRes.data);
+
       setDashboardData({
         profile: profileRes.data,
         orders: ordersRes.data || [],
@@ -53,6 +55,8 @@ export default function DashboardPage() {
           reviewsWritten: reviewsRes.data?.length || 0
         }
       });
+      console.log('Dashboard - dashboardData.reviews:', reviewsRes.data);
+      console.log('Dashboard - dashboardData.stats.reviewsWritten:', reviewsRes.data?.length || 0);
     } catch (err: any) {
       console.error('Dashboard data loading error:', err);
       setError('Dashboard verileri yüklenirken hata oluştu.');
@@ -228,7 +232,6 @@ export default function DashboardPage() {
                           </p>
                         </div>
                         <div className="text-right">
-              
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             order.status === 'delivered' ? 'bg-green-100 text-green-800' :
                             order.status === 'shipped' ? 'bg-blue-100 text-blue-800' :

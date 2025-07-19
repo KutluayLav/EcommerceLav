@@ -158,3 +158,67 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Sipariş durumu güncellenemedi.' });
   }
 };
+
+export const updateOrder = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({ message: 'Sipariş bulunamadı.' });
+    }
+
+    // Güncellenebilir alanları güncelle
+    if (updateData.status) order.status = updateData.status;
+    if (updateData.shippingAddress) order.shippingAddress = updateData.shippingAddress;
+    if (updateData.trackingNumber) order.trackingNumber = updateData.trackingNumber;
+    if (updateData.notes) order.notes = updateData.notes;
+
+    await order.save();
+    
+    const updatedOrder = await Order.findById(id)
+      .populate('user')
+      .populate('items.product');
+    
+    res.json(updatedOrder);
+  } catch (err) {
+    res.status(500).json({ message: 'Sipariş güncellenemedi.' });
+  }
+};
+
+export const deleteOrder = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({ message: 'Sipariş bulunamadı.' });
+    }
+
+    await Order.findByIdAndDelete(id);
+    res.json({ message: 'Sipariş silindi.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Sipariş silinemedi.' });
+  }
+};
+
+export const bulkUpdateOrders = async (req: Request, res: Response) => {
+  try {
+    const { orderIds, status } = req.body;
+    if (!Array.isArray(orderIds) || !status) {
+      return res.status(400).json({ message: 'Geçersiz istek.' });
+    }
+    
+    const result = await Order.updateMany(
+      { _id: { $in: orderIds } },
+      { $set: { status } }
+    );
+    
+    res.json({ 
+      message: `${result.modifiedCount} sipariş güncellendi.`, 
+      modifiedCount: result.modifiedCount 
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Toplu güncelleme başarısız.' });
+  }
+};

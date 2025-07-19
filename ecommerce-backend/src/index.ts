@@ -23,7 +23,7 @@ const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/ecommerce'
 
 app.use(cors({
   origin: 'http://localhost:3000',
-  credentials: false, // JWT için false
+  credentials: false, 
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -40,7 +40,9 @@ app.use(express.json());
 
 // Static dosya servisi - uploads klasörü için
 app.use('/uploads', express.static(path.join(__dirname, './uploads')));
-console.log('Static dosya servisi eklendi: /uploads');
+app.use('/uploads/products', express.static(path.join(__dirname, './uploads/products')));
+app.use('/uploads/categories', express.static(path.join(__dirname, './uploads/categories')));
+console.log('Static dosya servisi eklendi: /uploads, /uploads/products ve /uploads/categories');
 
 console.log('userRoutes ekleniyor');
 app.use('/api/users', userRoutes);

@@ -24,6 +24,8 @@ export interface OrderDocument extends Document {
     country: string;
   };
   status: OrderStatus;
+  trackingNumber?: string;
+  notes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -50,6 +52,8 @@ const OrderSchema = new Schema<OrderDocument>({
     country: { type: String, required: true },
   },
   status: { type: String, enum: ['pending', 'confirmed', 'shipped', 'delivered'], default: 'pending' },
+  trackingNumber: { type: String },
+  notes: { type: String },
 }, { timestamps: true });
 
 export default mongoose.model<OrderDocument>('Order', OrderSchema);

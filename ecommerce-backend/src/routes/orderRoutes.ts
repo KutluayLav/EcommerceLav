@@ -1,5 +1,5 @@
 import express from 'express';
-import { getOrders, getOrder, updateOrderStatus, createOrder, getUserOrders } from '../controllers/orderController';
+import { getOrders, getOrder, updateOrderStatus, createOrder, getUserOrders, updateOrder, deleteOrder, bulkUpdateOrders } from '../controllers/orderController';
 import { authMiddleware } from '../middlewares/authMiddleware';
 import { adminMiddleware } from '../middlewares/adminMiddleware';
 
@@ -15,5 +15,11 @@ router.get('/', authMiddleware, adminMiddleware, getOrders);
 router.get('/:id', authMiddleware, adminMiddleware, getOrder);
 // Sipariş durumu güncelle
 router.put('/:id/status', authMiddleware, adminMiddleware, updateOrderStatus);
+// Sipariş güncelle
+router.put('/:id', authMiddleware, adminMiddleware, updateOrder);
+// Sipariş sil
+router.delete('/:id', authMiddleware, adminMiddleware, deleteOrder);
+// Toplu sipariş güncelle
+router.put('/bulk', authMiddleware, adminMiddleware, bulkUpdateOrders);
 
 export default router;

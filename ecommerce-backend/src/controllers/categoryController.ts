@@ -1,10 +1,12 @@
 import { Request, Response } from 'express';
 import Category from '../models/Category';
 import Product from '../models/Product';
+import fs from 'fs';
+import path from 'path';
 
 export const createCategory = async (req: Request, res: Response) => {
   try {
-    const { name, description, sortOrder, active } = req.body;
+    const { name, description, sortOrder, active, slug, metaTitle, metaDescription, featured, parentCategory } = req.body;
     if (!name || !description) {
       return res.status(400).json({ message: 'Zorunlu alanlar eksik.' });
     }
@@ -17,7 +19,12 @@ export const createCategory = async (req: Request, res: Response) => {
       description,
       image,
       sortOrder: sortOrder || 0,
-      active: active !== undefined ? active : true
+      active: active !== undefined ? active : true,
+      slug,
+      metaTitle,
+      metaDescription,
+      featured: featured || false,
+      parentCategory
     });
     res.status(201).json(category);
   } catch (err) {
@@ -28,7 +35,7 @@ export const createCategory = async (req: Request, res: Response) => {
 export const updateCategory = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, description, sortOrder, active } = req.body;
+    const { name, description, sortOrder, active, slug, metaTitle, metaDescription, featured, parentCategory } = req.body;
     const category = await Category.findById(id);
     if (!category) {
       return res.status(404).json({ message: 'Kategori bulunamadı.' });
@@ -37,6 +44,11 @@ export const updateCategory = async (req: Request, res: Response) => {
     if (description) category.description = description;
     if (sortOrder !== undefined) category.sortOrder = sortOrder;
     if (active !== undefined) category.active = active;
+    if (slug) category.slug = slug;
+    if (metaTitle) category.metaTitle = metaTitle;
+    if (metaDescription) category.metaDescription = metaDescription;
+    if (featured !== undefined) category.featured = featured;
+    if (parentCategory) category.parentCategory = parentCategory;
     if (req.file) {
       category.image = req.file.filename;
     }
@@ -50,10 +62,21 @@ export const updateCategory = async (req: Request, res: Response) => {
 export const deleteCategory = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const category = await Category.findByIdAndDelete(id);
+    const category = await Category.findById(id);
     if (!category) {
       return res.status(404).json({ message: 'Kategori bulunamadı.' });
     }
+
+    // Kategori resmini sil
+    if (category.image) {
+      const imagePath = path.join(__dirname, '../uploads/categories', category.image);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+        console.log(`Kategori silinirken resim de silindi: ${category.image}`);
+      }
+    }
+
+    await Category.findByIdAndDelete(id);
     res.json({ message: 'Kategori silindi.' });
   } catch (err) {
     res.status(500).json({ message: 'Kategori silinemedi.' });
@@ -132,5 +155,26 @@ export const getProductsByCategory = async (req: Request, res: Response) => {
     res.json({ products, total });
   } catch (err) {
     res.status(500).json({ message: 'Kategoriye göre ürünler getirilemedi.' });
+  }
+};
+
+export const bulkUpdateCategories = async (req: Request, res: Response) => {
+  try {
+    const { categoryIds, active } = req.body;
+    if (!Array.isArray(categoryIds) || typeof active !== 'boolean') {
+      return res.status(400).json({ message: 'Geçersiz istek.' });
+    }
+    
+    const result = await Category.updateMany(
+      { _id: { $in: categoryIds } },
+      { $set: { active } }
+    );
+    
+    res.json({ 
+      message: `${result.modifiedCount} kategori güncellendi.`, 
+      modifiedCount: result.modifiedCount 
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Toplu güncelleme başarısız.' });
   }
 };

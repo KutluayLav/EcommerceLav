@@ -21,6 +21,7 @@ export interface ProductDocument extends Document {
   popular: boolean;
   newArrival: boolean;
   variants: ProductVariant[];
+  status: string; // 'active', 'draft', 'inactive' gibi
 }
 
 const ProductVariantSchema = new Schema<ProductVariant>({
@@ -42,6 +43,7 @@ const ProductSchema = new Schema<ProductDocument>({
   popular: { type: Boolean, default: false },
   newArrival: { type: Boolean, default: false },
   variants: { type: [ProductVariantSchema], default: [] },
+  status: { type: String, default: 'active' },
 }, { timestamps: true });
 
 export default mongoose.model<ProductDocument>('Product', ProductSchema);

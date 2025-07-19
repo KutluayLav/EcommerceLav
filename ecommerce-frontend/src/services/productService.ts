@@ -41,4 +41,8 @@ export const getPopularProducts = (limit: number = 3) =>
 
 // Yeni gelen ürünler
 export const getNewArrivalProducts = (limit: number = 3) =>
-  api.get('/products', { params: { newArrival: true, limit } }); 
+  api.get('/products', { params: { newArrival: true, limit } });
+
+// Ürün için review ekle
+export const addProductReview = (productId: string, data: { rating: number; comment: string }) =>
+  api.post(`/products/${productId}/reviews`, data); 

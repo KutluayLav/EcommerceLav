@@ -10,6 +10,7 @@ import { useDispatch } from 'react-redux';
 import { addToCart } from '@/features/cart/cartSlice';
 import { AppDispatch } from '@/store';
 import { Loader2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -21,6 +22,7 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
+  const [refreshReviews, setRefreshReviews] = useState(0);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -93,6 +95,13 @@ export default function ProductDetailPage() {
           Ürün sepete eklendi!
         </div>
       )}
+      {/* Geri Dön Linki */}
+      <div className="mb-6 flex items-center">
+        <Link href="/products" className="flex items-center text-blue-600 hover:text-blue-700 font-medium">
+          <ArrowLeft className="h-5 w-5 mr-2" />
+          Ürünlere Git
+        </Link>
+      </div>
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
         {/* Image Gallery - For now only main image */}
         <div className="lg:w-1/2 rounded-lg overflow-hidden shadow-lg">
@@ -248,7 +257,11 @@ export default function ProductDetailPage() {
 
       {/* Customer Reviews Section */}
       <section className="mt-12 sm:mt-16 border-t border-gray-200 pt-8 sm:pt-12">
-        <ReviewList productId={product._id || product.id || ''} />
+        <ReviewList 
+          productId={product._id || product.id || ''} 
+          refreshKey={refreshReviews}
+          onReviewSubmitted={() => setRefreshReviews(r => r + 1)}
+        />
       </section>
     </main>
   );

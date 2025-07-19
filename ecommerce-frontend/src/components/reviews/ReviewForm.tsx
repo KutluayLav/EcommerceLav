@@ -6,6 +6,7 @@ import { Star, Send } from 'lucide-react';
 import { submitReviewStart, submitReviewSuccess, submitReviewFailure } from '@/features/reviews/reviewsSlice';
 import { RootState } from '@/store';
 import { Review } from '@/types';
+import { addProductReview } from '@/services/productService';
 
 interface ReviewFormProps {
   productId: string;
@@ -43,34 +44,32 @@ export default function ReviewForm({ productId, onReviewSubmitted }: ReviewFormP
     dispatch(submitReviewStart());
 
     try {
-      // Simulate API call
-      setTimeout(() => {
-        const newReview: Review = {
-          id: `r_${Date.now()}`,
-          productId,
-          userId: user.id,
-          userName: user.name,
-          rating,
-          title: title.trim(),
-          comment: comment.trim(),
-          date: new Date().toISOString().split('T')[0],
-          verified: true, // Assume verified for demo
-          helpful: 0,
-          userMarkedHelpful: false,
-        };
-
-        dispatch(submitReviewSuccess(newReview));
-        
-        // Reset form
-        setRating(0);
-        setTitle('');
-        setComment('');
-        setShowForm(false);
-        
-        if (onReviewSubmitted) {
-          onReviewSubmitted();
-        }
-      }, 1000);
+      const response = await addProductReview(productId, {
+        rating,
+        comment: title.trim() + '\n' + comment.trim(),
+      });
+      const newReview: Review = {
+        id: response.data._id,
+        productId,
+        userId: user.id,
+        userName: user.name,
+        rating,
+        title: title.trim(),
+        comment: comment.trim(),
+        date: new Date().toISOString().split('T')[0],
+        verified: true,
+        helpful: 0,
+        userMarkedHelpful: false,
+      };
+      dispatch(submitReviewSuccess(newReview));
+      // Reset form
+      setRating(0);
+      setTitle('');
+      setComment('');
+      setShowForm(false);
+      if (onReviewSubmitted) {
+        onReviewSubmitted();
+      }
     } catch (error) {
       dispatch(submitReviewFailure('Failed to submit review. Please try again.'));
     }

@@ -1,17 +1,21 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
-import { useSelector } from 'react-redux';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { Star, Filter } from 'lucide-react';
 import { RootState } from '@/store';
 import ReviewItem from './ReviewItem';
 import ReviewForm from './ReviewForm';
+import { fetchReviewsStart, fetchReviewsSuccess, fetchReviewsFailure } from '@/features/reviews/reviewsSlice';
+import api from '@/services/api';
 
 interface ReviewListProps {
   productId: string;
+  refreshKey?: number;
+  onReviewSubmitted?: () => void;
 }
 
-export default function ReviewList({ productId }: ReviewListProps) {
+export default function ReviewList({ productId, refreshKey }: ReviewListProps) {
   // Memoized selector to prevent unnecessary re-renders
   const selectReviews = useCallback(
     (state: RootState) => state.reviews.reviews[productId] || [],
@@ -20,6 +24,20 @@ export default function ReviewList({ productId }: ReviewListProps) {
   
   const reviews = useSelector(selectReviews);
   const { isLoading } = useSelector((state: RootState) => state.reviews);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      dispatch(fetchReviewsStart());
+      try {
+        const res = await api.get(`/products/${productId}/reviews`);
+        dispatch(fetchReviewsSuccess({ productId, reviews: res.data.reviews }));
+      } catch (err: any) {
+        dispatch(fetchReviewsFailure('Yorumlar getirilemedi.'));
+      }
+    };
+    fetchReviews();
+  }, [productId, refreshKey, dispatch]);
 
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'highest' | 'lowest' | 'helpful'>('newest');
@@ -225,7 +243,7 @@ export default function ReviewList({ productId }: ReviewListProps) {
       <div className="space-y-6">
         {filteredAndSortedReviews.length > 0 ? (
           filteredAndSortedReviews.map((review) => (
-            <ReviewItem key={review.id} review={review} />
+            <ReviewItem key={review.id || review._id} review={review} />
           ))
         ) : reviewStats.totalReviews > 0 ? (
           <div className="text-center py-8">

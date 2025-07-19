@@ -28,6 +28,7 @@ export type Product = {
 };
 
 export interface Review {
+  _id?: string;
   id: string;
   productId: string;
   userId: string;
@@ -40,6 +41,12 @@ export interface Review {
   verified: boolean; // if user actually purchased the product
   helpful: number; // number of people who found this review helpful
   userMarkedHelpful?: boolean; // if current user marked this helpful
+  user?: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+  };
+  createdAt?: string;
 }
 
 export interface OrderItem {

@@ -2,10 +2,12 @@ import { Request, Response } from 'express';
 import Product from '../models/Product';
 import Category from '../models/Category';
 import Order from '../models/Order';
+import fs from 'fs';
+import path from 'path';
 
 export const createProduct = async (req: Request, res: Response) => {
   try {
-    const { name, description, price, category, stock, specifications, tags, featured, popular, newArrival, variants } = req.body;
+    const { name, description, price, category, stock, specifications, tags, featured, popular, newArrival, variants, status } = req.body;
     if (!name || !description || !price || !category || stock === undefined) {
       return res.status(400).json({ message: 'Zorunlu alanlar eksik.' });
     }
@@ -33,7 +35,8 @@ export const createProduct = async (req: Request, res: Response) => {
       featured: !!featured,
       popular: !!popular,
       newArrival: !!newArrival,
-      variants
+      variants,
+      status: status || 'active',
     });
     res.status(201).json(product);
   } catch (err) {
@@ -44,11 +47,15 @@ export const createProduct = async (req: Request, res: Response) => {
 export const updateProduct = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, description, price, category, stock, specifications, tags, featured, popular, newArrival, variants } = req.body;
+    const { name, description, price, category, stock, specifications, tags, featured, popular, newArrival, variants, status, images } = req.body;
     const product = await Product.findById(id);
     if (!product) {
       return res.status(404).json({ message: 'Ürün bulunamadı.' });
     }
+
+    // Eski resimleri kaydet
+    const oldImages = [...product.images];
+
     if (name) product.name = name;
     if (description) product.description = description;
     if (price !== undefined) product.price = price;
@@ -60,13 +67,31 @@ export const updateProduct = async (req: Request, res: Response) => {
     if (popular !== undefined) product.popular = popular;
     if (newArrival !== undefined) product.newArrival = newArrival;
     if (variants) product.variants = variants;
-    // Görsel güncelleme (isteğe bağlı)
-    if (req.files && Array.isArray(req.files)) {
+    if (status !== undefined) product.status = status;
+    
+    // Görsel güncelleme
+    if (images && Array.isArray(images)) {
+      product.images = images;
+    } else if (req.files && Array.isArray(req.files)) {
       product.images = req.files.map((file: any) => file.filename);
     } else if (req.file) {
       product.images = [req.file.filename];
     }
+
     await product.save();
+
+    // Silinen resimlerin dosyalarını sil
+    const newImages = product.images;
+    const deletedImages = oldImages.filter(img => !newImages.includes(img));
+    
+    deletedImages.forEach(imageName => {
+      const imagePath = path.join(__dirname, '../uploads/products', imageName);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+        console.log(`Silinen resim: ${imageName}`);
+      }
+    });
+
     res.json(product);
   } catch (err) {
     res.status(500).json({ message: 'Ürün güncellenemedi.' });
@@ -76,10 +101,23 @@ export const updateProduct = async (req: Request, res: Response) => {
 export const deleteProduct = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const product = await Product.findByIdAndDelete(id);
+    const product = await Product.findById(id);
     if (!product) {
       return res.status(404).json({ message: 'Ürün bulunamadı.' });
     }
+
+    // Ürünün resimlerini sil
+    if (product.images && product.images.length > 0) {
+      product.images.forEach(imageName => {
+        const imagePath = path.join(__dirname, '../uploads/products', imageName);
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+          console.log(`Ürün silinirken resim de silindi: ${imageName}`);
+        }
+      });
+    }
+
+    await Product.findByIdAndDelete(id);
     res.json({ message: 'Ürün silindi.' });
   } catch (err) {
     res.status(500).json({ message: 'Ürün silinemedi.' });
@@ -155,15 +193,20 @@ export const uploadProductImage = async (req: Request, res: Response) => {
 
 export const bulkUpdateProducts = async (req: Request, res: Response) => {
   try {
-    const { productIds, active } = req.body;
-    if (!Array.isArray(productIds) || typeof active !== 'boolean') {
+    const { productIds, status } = req.body;
+    if (!Array.isArray(productIds) || !status) {
       return res.status(400).json({ message: 'Geçersiz istek.' });
     }
+    
     const result = await Product.updateMany(
       { _id: { $in: productIds } },
-      { $set: { active } }
+      { $set: { status } }
     );
-    res.json({ message: 'Ürünler güncellendi.', result });
+    
+    res.json({ 
+      message: `${result.modifiedCount} ürün güncellendi.`, 
+      modifiedCount: result.modifiedCount 
+    });
   } catch (err) {
     res.status(500).json({ message: 'Toplu güncelleme başarısız.' });
   }

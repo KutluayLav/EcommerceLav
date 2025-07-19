@@ -66,14 +66,23 @@ export default function ReviewItem({ review }: ReviewItemProps) {
             />
           ) : (
             <span className="text-sm font-medium text-gray-600">
-              {review.userName.charAt(0).toUpperCase()}
+              {(
+                review.userName?.charAt(0) ||
+                (review.user?.firstName?.charAt(0) || '') + (review.user?.lastName?.charAt(0) || '') ||
+                review.user?.email?.charAt(0) || '?'
+              ).toUpperCase()}
             </span>
           )}
         </div>
         
         <div className="flex-1">
           <div className="flex items-center space-x-3 mb-2">
-            <h4 className="font-semibold text-gray-900">{review.userName}</h4>
+            <h4 className="font-semibold text-gray-900">
+              {review.userName ||
+                (review.user?.firstName && review.user?.lastName
+                  ? `${review.user.firstName} ${review.user.lastName}`
+                  : review.user?.email || '?')}
+            </h4>
             {review.verified && (
               <div className="flex items-center space-x-1 text-green-600">
                 <CheckCircle className="h-4 w-4" />
@@ -84,7 +93,7 @@ export default function ReviewItem({ review }: ReviewItemProps) {
           
           <div className="flex items-center space-x-3 mb-2">
             {renderStars(review.rating)}
-            <span className="text-sm text-gray-600">{formatDate(review.date)}</span>
+            <span className="text-sm text-gray-600">{formatDate(review.createdAt || review.date)}</span>
           </div>
           
           <h5 className="font-semibold text-gray-900 mb-2">{review.title}</h5>
