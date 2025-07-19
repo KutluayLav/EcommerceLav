@@ -1,6 +1,6 @@
 # 🛒 E-commerce 
 
-Modern bir e-ticaret yönetim paneli. React/Next.js frontend ve Node.js/Express backend ile geliştirilmiştir.
+Modern bir e-ticaret uygulaması ve yönetim paneli. React/Next.js frontend ve Node.js/Express backend ile geliştirilmiştir.
 
 ## 🚀 Teknolojiler
 
