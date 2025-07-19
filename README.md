@@ -2,6 +2,7 @@
 
 Modern bir e-ticaret uygulaması ve yönetim paneli. React/Next.js frontend ve Node.js/Express backend ile geliştirilmiştir.
 
+
 ## 🚀 Teknolojiler
 
 ### Frontend
@@ -78,13 +79,16 @@ SMTP_PASS=your-app-password
 
 ### Test Ortamında Email Aktivasyonu
 **⚠️ Önemli:** Test ortamında tüm email aktivasyonları `.env` dosyasında belirtilen tek bir mail adresine gönderilir.
-# SMTP Ayarları (Ethereal ile test için)
 
+#### Ethereal Email Test Ayarları
+```env
+# SMTP Ayarları (Ethereal ile test için)
 SMTP_HOST=smtp.ethereal.email
 SMTP_PORT=587
 SMTP_USER=ornek@ethereal.email
 SMTP_PASS=ornek
 SMTP_FROM=Ecommerce <ornek@ethereal.email>
+```
 
 #### Test Süreci:
 1. **Müşteri kayıt olur** → Doğrulama emaili test mailine gönderilir
@@ -190,6 +194,28 @@ npm run dev
 **Not:** Email doğrulanmadan giriş yapılamaz!
 **Test Ortamı:** Tüm mailler tek bir test mailine gelir, kendi mailinizi `.env` dosyasında ayarlayın.
 
+### 🛒 Müşteri Alışveriş Süreci
+1. **Ürünleri Keşfedin:**
+   - Ana sayfa: http://localhost:3000
+   - Kategoriler: http://localhost:3000/categories
+   - Ürünler: http://localhost:3000/products
+   - Ürün arama ve filtreleme
+
+2. **Sepete Ekleyin:**
+   - Ürün detay sayfasından "Sepete Ekle"
+   - Sepet sayfası: http://localhost:3000/cart
+   - Miktar güncelleme ve ürün silme
+
+3. **Ödeme Yapın:**
+   - Adres bilgilerini girin
+   - Ödeme yöntemini seçin
+   - Siparişi tamamlayın
+
+4. **Sipariş Takibi:**
+   - Profil sayfası: http://localhost:3000/profile
+   - Sipariş geçmişi ve durumu
+   - Favori ürünler (Wishlist)
+
 ## 📁 Proje Yapısı
 
 ```
@@ -266,8 +292,13 @@ Ecommerce/
 - ✅ Email doğrulama (zorunlu)
 - ✅ Profil yönetimi
 - ✅ Adres yönetimi
-- ✅ Sipariş geçmişi
-- ✅ Wishlist
+- ✅ Sipariş geçmişi ve takibi
+- ✅ Wishlist (favori ürünler)
+- ✅ Sepet yönetimi
+- ✅ Ürün arama ve filtreleme
+- ✅ Kategori bazlı ürün görüntüleme
+- ✅ Ürün detay sayfası
+- ✅ Güvenli ödeme sistemi
 
 ## 🐛 Sorun Giderme
 
@@ -299,15 +330,5 @@ lsof -i :5050
 ## 📄 Lisans
 
 Bu proje MIT lisansı altında lisanslanmıştır.
-
-## 🤝 Katkıda Bulunma
-
-1. Fork yapın
-2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
-3. Commit yapın (`git commit -m 'Add amazing feature'`)
-4. Push yapın (`git push origin feature/amazing-feature`)
-5. Pull Request oluşturun
-
----
 
 **Not:** Bu proje geliştirme amaçlıdır. Production kullanımı için ek güvenlik önlemleri alınmalıdır.
